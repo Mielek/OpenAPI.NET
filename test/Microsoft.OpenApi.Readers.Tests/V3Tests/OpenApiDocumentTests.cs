@@ -9,9 +9,12 @@ using System.Linq;
 using System.Threading;
 using FluentAssertions;
 using Microsoft.OpenApi.Any;
+using Microsoft.OpenApi.Extensions;
+using Microsoft.OpenApi.Interfaces;
 using Microsoft.OpenApi.Models;
 using Microsoft.OpenApi.Validations;
 using Microsoft.OpenApi.Validations.Rules;
+using Microsoft.OpenApi.Writers;
 using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
@@ -24,6 +27,51 @@ namespace Microsoft.OpenApi.Readers.Tests.V3Tests
         private const string SampleFolderPath = "V3Tests/Samples/OpenApiDocument/";
 
         private readonly ITestOutputHelper _output;
+
+        public T Clone<T>(T element) where T : IOpenApiSerializable
+        {
+            using (var stream = new MemoryStream())
+            {
+                IOpenApiWriter writer;
+                var streamWriter = new FormattingStreamWriter(stream, CultureInfo.InvariantCulture);
+                writer = new OpenApiJsonWriter(streamWriter, new OpenApiJsonWriterSettings()
+                {
+                    InlineLocalReferences = true
+                });
+                element.SerializeAsV3(writer);
+                writer.Flush();
+                stream.Position = 0;
+
+                using (var streamReader = new StreamReader(stream))
+                {
+                    var result = streamReader.ReadToEnd();
+                    return new OpenApiStringReader().ReadFragment<T>(result, OpenApiSpecVersion.OpenApi3_0, out OpenApiDiagnostic diagnostic4);
+                }
+            }
+        }
+
+        public OpenApiSecurityScheme CloneSecurityScheme(OpenApiSecurityScheme element)
+        {
+            using (var stream = new MemoryStream())
+            {
+                IOpenApiWriter writer;
+                var streamWriter = new FormattingStreamWriter(stream, CultureInfo.InvariantCulture);
+                writer = new OpenApiJsonWriter(streamWriter, new OpenApiJsonWriterSettings()
+                {
+                    InlineLocalReferences = true
+                });
+                element.SerializeAsV3WithoutReference(writer);
+                writer.Flush();
+                stream.Position = 0;
+
+                using (var streamReader = new StreamReader(stream))
+                {
+                    var result = streamReader.ReadToEnd();
+                    return new OpenApiStringReader().ReadFragment<OpenApiSecurityScheme>(result, OpenApiSpecVersion.OpenApi3_0, out OpenApiDiagnostic diagnostic4);
+                }
+            }
+        }
+
 
         public OpenApiDocumentTests(ITestOutputHelper output)
         {
@@ -82,7 +130,7 @@ components:
         sampleProperty:
           type: double
           minimum: 100.54
-          maximum: 60,000,000.35
+          maximum: 60000000.35
           exclusiveMaximum: true
           exclusiveMinimum: false
 paths: {}",
@@ -256,7 +304,8 @@ paths: {}",
                             Reference = new OpenApiReference
                             {
                                 Type = ReferenceType.Schema,
-                                Id = "pet"
+                                Id = "pet",
+                                HostDocument = actual
                             }
                         },
                         ["newPet"] = new OpenApiSchema
@@ -285,7 +334,8 @@ paths: {}",
                             Reference = new OpenApiReference
                             {
                                 Type = ReferenceType.Schema,
-                                Id = "newPet"
+                                Id = "newPet",
+                                HostDocument = actual
                             }
                         },
                         ["errorModel"] = new OpenApiSchema
@@ -311,38 +361,39 @@ paths: {}",
                             Reference = new OpenApiReference
                             {
                                 Type = ReferenceType.Schema,
-                                Id = "errorModel"
+                                Id = "errorModel",
+                                HostDocument = actual
                             }
                         },
                     }
                 };
 
                 // Create a clone of the schema to avoid modifying things in components.
-                var petSchema =
-                    JsonConvert.DeserializeObject<OpenApiSchema>(
-                        JsonConvert.SerializeObject(components.Schemas["pet"]));
+                var petSchema = Clone(components.Schemas["pet"]);
+
                 petSchema.Reference = new OpenApiReference
                 {
                     Id = "pet",
-                    Type = ReferenceType.Schema
+                    Type = ReferenceType.Schema,
+                    HostDocument = actual
                 };
 
-                var newPetSchema =
-                    JsonConvert.DeserializeObject<OpenApiSchema>(
-                        JsonConvert.SerializeObject(components.Schemas["newPet"]));
+                var newPetSchema = Clone(components.Schemas["newPet"]);
+
                 newPetSchema.Reference = new OpenApiReference
                 {
                     Id = "newPet",
-                    Type = ReferenceType.Schema
+                    Type = ReferenceType.Schema,
+                    HostDocument = actual
                 };
 
-                var errorModelSchema =
-                    JsonConvert.DeserializeObject<OpenApiSchema>(
-                        JsonConvert.SerializeObject(components.Schemas["errorModel"]));
+                var errorModelSchema = Clone(components.Schemas["errorModel"]);
+
                 errorModelSchema.Reference = new OpenApiReference
                 {
                     Id = "errorModel",
-                    Type = ReferenceType.Schema
+                    Type = ReferenceType.Schema,
+                    HostDocument = actual
                 };
 
                 var expected = new OpenApiDocument
@@ -683,7 +734,8 @@ paths: {}",
                             Reference = new OpenApiReference
                             {
                                 Type = ReferenceType.Schema,
-                                Id = "pet"
+                                Id = "pet",
+                                HostDocument = actual
                             }
                         },
                         ["newPet"] = new OpenApiSchema
@@ -712,7 +764,8 @@ paths: {}",
                             Reference = new OpenApiReference
                             {
                                 Type = ReferenceType.Schema,
-                                Id = "newPet"
+                                Id = "newPet",
+                                HostDocument = actual
                             }
                         },
                         ["errorModel"] = new OpenApiSchema
@@ -752,7 +805,8 @@ paths: {}",
                             Reference = new OpenApiReference
                             {
                                 Id = "securitySchemeName1",
-                                Type = ReferenceType.SecurityScheme
+                                Type = ReferenceType.SecurityScheme,
+                                HostDocument = actual
                             }
 
                         },
@@ -763,34 +817,31 @@ paths: {}",
                             Reference = new OpenApiReference
                             {
                                 Id = "securitySchemeName2",
-                                Type = ReferenceType.SecurityScheme
+                                Type = ReferenceType.SecurityScheme,
+                                HostDocument = actual
                             }
                         }
                     }
                 };
 
                 // Create a clone of the schema to avoid modifying things in components.
-                var petSchema =
-                    JsonConvert.DeserializeObject<OpenApiSchema>(
-                        JsonConvert.SerializeObject(components.Schemas["pet"]));
+                var petSchema = Clone(components.Schemas["pet"]);
                 petSchema.Reference = new OpenApiReference
                 {
                     Id = "pet",
                     Type = ReferenceType.Schema
                 };
 
-                var newPetSchema =
-                    JsonConvert.DeserializeObject<OpenApiSchema>(
-                        JsonConvert.SerializeObject(components.Schemas["newPet"]));
+                var newPetSchema = Clone(components.Schemas["newPet"]);
+
                 newPetSchema.Reference = new OpenApiReference
                 {
                     Id = "newPet",
                     Type = ReferenceType.Schema
                 };
 
-                var errorModelSchema =
-                    JsonConvert.DeserializeObject<OpenApiSchema>(
-                        JsonConvert.SerializeObject(components.Schemas["errorModel"]));
+                var errorModelSchema = Clone(components.Schemas["errorModel"]);
+
                 errorModelSchema.Reference = new OpenApiReference
                 {
                     Id = "errorModel",
@@ -814,16 +865,16 @@ paths: {}",
                     Name = "tagName2"
                 };
 
-                var securityScheme1 = JsonConvert.DeserializeObject<OpenApiSecurityScheme>(
-                    JsonConvert.SerializeObject(components.SecuritySchemes["securitySchemeName1"]));
+                var securityScheme1 = CloneSecurityScheme(components.SecuritySchemes["securitySchemeName1"]);
+
                 securityScheme1.Reference = new OpenApiReference
                 {
                     Id = "securitySchemeName1",
                     Type = ReferenceType.SecurityScheme
                 };
 
-                var securityScheme2 = JsonConvert.DeserializeObject<OpenApiSecurityScheme>(
-                    JsonConvert.SerializeObject(components.SecuritySchemes["securitySchemeName2"]));
+                var securityScheme2 = CloneSecurityScheme(components.SecuritySchemes["securitySchemeName2"]);
+
                 securityScheme2.Reference = new OpenApiReference
                 {
                     Id = "securitySchemeName2",
@@ -1170,7 +1221,7 @@ paths: {}",
                     }
                 };
 
-                actual.Should().BeEquivalentTo(expected);
+                actual.Should().BeEquivalentTo(expected, options => options.Excluding(m => m.Name == "HostDocument"));
             }
 
             context.Should().BeEquivalentTo(

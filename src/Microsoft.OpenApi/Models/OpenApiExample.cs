@@ -11,7 +11,7 @@ namespace Microsoft.OpenApi.Models
     /// <summary>
     /// Example Object.
     /// </summary>
-    public class OpenApiExample : IOpenApiSerializable, IOpenApiReferenceable, IOpenApiExtensible
+    public class OpenApiExample : IOpenApiSerializable, IOpenApiReferenceable, IOpenApiExtensible, IEffective<OpenApiExample>
     {
         /// <summary>
         /// Short description for the example.
@@ -55,6 +55,25 @@ namespace Microsoft.OpenApi.Models
         public bool UnresolvedReference { get; set; } = false;
 
         /// <summary>
+        /// Parameter-less constructor
+        /// </summary>
+        public OpenApiExample() {}
+
+        /// <summary>
+        /// Initializes a copy of <see cref="OpenApiExample"/> object
+        /// </summary>
+        public OpenApiExample(OpenApiExample example)
+        {
+            Summary = example?.Summary ?? Summary;
+            Description = example?.Description ?? Description;
+            Value = OpenApiAnyCloneHelper.CloneFromCopyConstructor(example?.Value);
+            ExternalValue = example?.ExternalValue ?? ExternalValue;
+            Extensions = example?.Extensions != null ? new Dictionary<string, IOpenApiExtension>(example.Extensions) : null;
+            Reference = example?.Reference != null ? new(example?.Reference) : null;
+            UnresolvedReference = example?.UnresolvedReference ?? UnresolvedReference;
+        }
+
+        /// <summary>
         /// Serialize <see cref="OpenApiExample"/> to Open Api v3.0
         /// </summary>
         public void SerializeAsV3(IOpenApiWriter writer)
@@ -64,13 +83,38 @@ namespace Microsoft.OpenApi.Models
                 throw Error.ArgumentNull(nameof(writer));
             }
 
-            if (Reference != null && writer.GetSettings().ReferenceInline != ReferenceInlineSetting.InlineLocalReferences)
-            {
-                Reference.SerializeAsV3(writer);
-                return;
-            }
+            var target = this;
 
-            SerializeAsV3WithoutReference(writer);
+            if (Reference != null)
+            {
+                if (!writer.GetSettings().ShouldInlineReference(Reference))
+                {
+                    Reference.SerializeAsV3(writer);
+                    return;
+                }
+                else
+                {
+                    target = GetEffective(Reference.HostDocument);
+                }
+            }
+            target.SerializeAsV3WithoutReference(writer);
+        }
+
+        /// <summary>
+        /// Returns an effective OpenApiExample object based on the presence of a $ref 
+        /// </summary>
+        /// <param name="doc">The host OpenApiDocument that contains the reference.</param>
+        /// <returns>OpenApiExample</returns>
+        public OpenApiExample GetEffective(OpenApiDocument doc)
+        {
+            if (this.Reference != null)
+            {
+                return doc.ResolveReferenceTo<OpenApiExample>(this.Reference);
+            }
+            else
+            {
+                return this;
+            }
         }
 
         /// <summary>

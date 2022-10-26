@@ -1,23 +1,26 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <TargetFrameworks>net46; netstandard2.0</TargetFrameworks>
+        <TargetFrameworks>netstandard2.0</TargetFrameworks>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <PackageIconUrl>http://go.microsoft.com/fwlink/?LinkID=288890</PackageIconUrl>
         <PackageProjectUrl>https://github.com/Microsoft/OpenAPI.NET</PackageProjectUrl>
-        <PackageLicenseUrl>https://raw.githubusercontent.com/Microsoft/OpenAPI.NET/master/LICENSE</PackageLicenseUrl>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
         <Authors>Microsoft</Authors>
         <Company>Microsoft</Company>
         <Title>Microsoft.OpenApi.Readers</Title>
         <PackageId>Microsoft.ApiManagement.OpenApi.Readers</PackageId>
-        <Version>1.2.4-apim6</Version>
+        <Version>1.4.4-apim1</Version>
         <Description>OpenAPI.NET Readers for JSON and YAML documents</Description>
         <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
         <PackageTags>OpenAPI .NET</PackageTags>
-        
+        <RepositoryUrl>https://github.com/Microsoft/OpenAPI.NET</RepositoryUrl>
+        <PackageReleaseNotes>https://github.com/microsoft/OpenAPI.NET/releases</PackageReleaseNotes>
         <AssemblyName>Microsoft.OpenApi.Readers</AssemblyName>
         <RootNamespace>Microsoft.OpenApi.Readers</RootNamespace>
         <SignAssembly>true</SignAssembly>
+        <!-- https://github.com/dotnet/sourcelink/blob/main/docs/README.md#embeduntrackedsources -->
+        <EmbedUntrackedSources>true</EmbedUntrackedSources>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -25,7 +28,7 @@
         <AssemblyOriginatorKeyFile>..\Microsoft.OpenApi.snk</AssemblyOriginatorKeyFile>
         <PackageReleaseNotes>Forked from: https://github.com/microsoft/OpenAPI.NET
 
-Based on 1.2.3 553061a69b2d8b8b1653f172707409a16f2a9579
+Based on 1.4.4 86e04ff9d7d16b766275c659744b9c4a0b202fdc
 
 Changes:
 - OpenApiYamlDocumentReader class made public
@@ -34,8 +37,13 @@ Changes:
         <FileVersion>1.2.3.0</FileVersion>
     </PropertyGroup>
 
+    <!-- https://github.com/clairernovotny/DeterministicBuilds#deterministic-builds -->
+    <PropertyGroup Condition="'$(TF_BUILD)' == 'true'">
+        <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+    </PropertyGroup>
+
     <ItemGroup>
-        <PackageReference Include="SharpYaml" Version="1.6.5" />
+        <PackageReference Include="SharpYaml" Version="2.1.0" />
     </ItemGroup>
 
     <ItemGroup>
