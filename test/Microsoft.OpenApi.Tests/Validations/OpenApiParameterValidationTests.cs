@@ -61,7 +61,7 @@ namespace Microsoft.OpenApi.Validations.Tests
             });
         }
 
-        [Fact]
+        [Fact(Skip = "Fork does not have parameters mismatch validation")]
         public void ValidateExampleShouldNotHaveDataTypeMismatchForSimpleSchema()
         {
             // Arrange
@@ -99,7 +99,7 @@ namespace Microsoft.OpenApi.Validations.Tests
             });
         }
 
-        [Fact]
+        [Fact(Skip = "Fork does not have parameters mismatch validation")]
         public void ValidateExamplesShouldNotHaveDataTypeMismatchForSimpleSchema()
         {
             // Arrange

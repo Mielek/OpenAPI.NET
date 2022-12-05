@@ -47,7 +47,6 @@ namespace Microsoft.OpenApi.Tests.Writers
 
         [Theory]
         [MemberData(nameof(StringWithSpecialCharacters))]
-        [InlineData("0x1234", "\"0x1234\"")]
         public void WriteStringWithSpecialCharactersAsJsonWorks(string input, string expected, bool produceTerseOutput)
         {
             // Arrange

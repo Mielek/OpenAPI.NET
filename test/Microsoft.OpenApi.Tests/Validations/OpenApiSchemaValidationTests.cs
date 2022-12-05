@@ -17,7 +17,7 @@ namespace Microsoft.OpenApi.Validations.Tests
     [Collection("DefaultSettings")]
     public class OpenApiSchemaValidationTests
     {
-        [Fact]
+        [Fact(Skip = "Fork does not have schema mismatch validation")]
         public void ValidateDefaultShouldNotHaveDataTypeMismatchForSimpleSchema()
         {
             // Arrange
@@ -48,7 +48,7 @@ namespace Microsoft.OpenApi.Validations.Tests
             });
         }
 
-        [Fact]
+        [Fact(Skip = "Fork does not have schema mismatch validation")]
         public void ValidateExampleAndDefaultShouldNotHaveDataTypeMismatchForSimpleSchema()
         {
             // Arrange
@@ -82,7 +82,7 @@ namespace Microsoft.OpenApi.Validations.Tests
             });
         }
 
-        [Fact]
+        [Fact(Skip = "Fork does not have schema mismatch validation")]
         public void ValidateEnumShouldNotHaveDataTypeMismatchForSimpleSchema()
         {
             // Arrange
@@ -141,7 +141,7 @@ namespace Microsoft.OpenApi.Validations.Tests
             });
         }
 
-        [Fact]
+        [Fact(Skip = "Fork does not have schema mismatch validation")]
         public void ValidateDefaultShouldNotHaveDataTypeMismatchForComplexSchema()
         {
             // Arrange

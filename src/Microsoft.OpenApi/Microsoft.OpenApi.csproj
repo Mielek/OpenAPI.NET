@@ -29,7 +29,7 @@
         <AssemblyOriginatorKeyFile>..\Microsoft.OpenApi.snk</AssemblyOriginatorKeyFile>
         <PackageReleaseNotes>Forked from: https://github.com/microsoft/OpenAPI.NET
 
-Based on 1.2.3 553061a69b2d8b8b1653f172707409a16f2a9579
+Based on 1.4.4 553061a69b2d8b8b1653f172707409a16f2a9579
 
 Changes:
 - Data type mismatch validation disabled for example, examples, enum, default, e.t.c.

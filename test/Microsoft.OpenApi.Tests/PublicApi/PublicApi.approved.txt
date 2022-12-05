@@ -334,6 +334,7 @@ namespace Microsoft.OpenApi
     {
         OpenApi2_0 = 0,
         OpenApi3_0 = 1,
+        OpenApi3_1 = 2,
     }
 }
 namespace Microsoft.OpenApi.Models
@@ -1292,10 +1293,7 @@ namespace Microsoft.OpenApi.Validations.Rules
         public static Microsoft.OpenApi.Validations.ValidationRule<Microsoft.OpenApi.Models.OpenApiExternalDocs> UrlIsRequired { get; }
     }
     [Microsoft.OpenApi.Validations.Rules.OpenApiRule]
-    public static class OpenApiHeaderRules
-    {
-        public static Microsoft.OpenApi.Validations.ValidationRule<Microsoft.OpenApi.Models.OpenApiHeader> HeaderMismatchedDataType { get; }
-    }
+    public static class OpenApiHeaderRules { }
     [Microsoft.OpenApi.Validations.Rules.OpenApiRule]
     public static class OpenApiInfoRules
     {
@@ -1307,10 +1305,7 @@ namespace Microsoft.OpenApi.Validations.Rules
         public static Microsoft.OpenApi.Validations.ValidationRule<Microsoft.OpenApi.Models.OpenApiLicense> LicenseRequiredFields { get; }
     }
     [Microsoft.OpenApi.Validations.Rules.OpenApiRule]
-    public static class OpenApiMediaTypeRules
-    {
-        public static Microsoft.OpenApi.Validations.ValidationRule<Microsoft.OpenApi.Models.OpenApiMediaType> MediaTypeMismatchedDataType { get; }
-    }
+    public static class OpenApiMediaTypeRules { }
     [Microsoft.OpenApi.Validations.Rules.OpenApiRule]
     public static class OpenApiOAuthFlowRules
     {
@@ -1319,7 +1314,6 @@ namespace Microsoft.OpenApi.Validations.Rules
     [Microsoft.OpenApi.Validations.Rules.OpenApiRule]
     public static class OpenApiParameterRules
     {
-        public static Microsoft.OpenApi.Validations.ValidationRule<Microsoft.OpenApi.Models.OpenApiParameter> ParameterMismatchedDataType { get; }
         public static Microsoft.OpenApi.Validations.ValidationRule<Microsoft.OpenApi.Models.OpenApiParameter> ParameterRequiredFields { get; }
         public static Microsoft.OpenApi.Validations.ValidationRule<Microsoft.OpenApi.Models.OpenApiParameter> PathParameterShouldBeInThePath { get; }
         public static Microsoft.OpenApi.Validations.ValidationRule<Microsoft.OpenApi.Models.OpenApiParameter> RequiredMustBeTrueWhenInIsPath { get; }
@@ -1348,7 +1342,6 @@ namespace Microsoft.OpenApi.Validations.Rules
     [Microsoft.OpenApi.Validations.Rules.OpenApiRule]
     public static class OpenApiSchemaRules
     {
-        public static Microsoft.OpenApi.Validations.ValidationRule<Microsoft.OpenApi.Models.OpenApiSchema> SchemaMismatchedDataType { get; }
         public static Microsoft.OpenApi.Validations.ValidationRule<Microsoft.OpenApi.Models.OpenApiSchema> ValidateSchemaDiscriminator { get; }
         public static bool TraverseSchemaElements(string discriminatorName, System.Collections.Generic.IList<Microsoft.OpenApi.Models.OpenApiSchema> childSchema) { }
         public static bool ValidateChildSchemaAgainstDiscriminator(Microsoft.OpenApi.Models.OpenApiSchema schema, string discriminatorName) { }

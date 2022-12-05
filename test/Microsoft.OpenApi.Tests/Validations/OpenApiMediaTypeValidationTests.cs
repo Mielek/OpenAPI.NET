@@ -17,7 +17,7 @@ namespace Microsoft.OpenApi.Validations.Tests
 {
     public class OpenApiMediaTypeValidationTests
     {
-        [Fact]
+        [Fact(Skip = "Fork does not have media type validation")]
         public void ValidateExampleShouldNotHaveDataTypeMismatchForSimpleSchema()
         {
             // Arrange
@@ -52,7 +52,7 @@ namespace Microsoft.OpenApi.Validations.Tests
             });
         }
 
-        [Fact]
+        [Fact(Skip = "Fork does not have media type validation")]
         public void ValidateExamplesShouldNotHaveDataTypeMismatchForSimpleSchema()
         {
             // Arrange

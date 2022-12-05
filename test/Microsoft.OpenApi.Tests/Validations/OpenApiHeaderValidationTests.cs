@@ -17,7 +17,7 @@ namespace Microsoft.OpenApi.Validations.Tests
 {
     public class OpenApiHeaderValidationTests
     {
-        [Fact]
+        [Fact(Skip = "Fork does not have header validation")]
         public void ValidateExampleShouldNotHaveDataTypeMismatchForSimpleSchema()
         {
             // Arrange
@@ -53,7 +53,7 @@ namespace Microsoft.OpenApi.Validations.Tests
             });
         }
 
-        [Fact]
+        [Fact(Skip = "Fork does not have header validation")]
         public void ValidateExamplesShouldNotHaveDataTypeMismatchForSimpleSchema()
         {
             // Arrange
