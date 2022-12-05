@@ -25,6 +25,15 @@ namespace Microsoft.OpenApi.Any
         }
 
         /// <summary>
+        /// Initializes a copy of an <see cref="IOpenApiPrimitive"/> object
+        /// </summary>
+        /// <param name="openApiPrimitive"></param>
+        public OpenApiPrimitive(OpenApiPrimitive<T> openApiPrimitive)
+        {
+            Value = openApiPrimitive.Value;
+        }
+
+        /// <summary>
         /// The kind of <see cref="IOpenApiAny"/>.
         /// </summary>
         public AnyType AnyType { get; } = AnyType.Primitive;
@@ -70,7 +79,10 @@ namespace Microsoft.OpenApi.Any
 
                 case PrimitiveType.String:
                     var stringValue = (OpenApiString)(IOpenApiPrimitive)this;
-                    writer.WriteValue(stringValue.Value);
+                    if (stringValue.IsRawString())
+                        writer.WriteRaw(stringValue.Value);
+                    else
+                        writer.WriteValue(stringValue.Value);
                     break;
 
                 case PrimitiveType.Byte:

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Microsoft.OpenApi.Exceptions;
+using Microsoft.OpenApi.Models;
 using Microsoft.OpenApi.Properties;
 
 namespace Microsoft.OpenApi.Writers
@@ -23,7 +24,7 @@ namespace Microsoft.OpenApi.Writers
         /// <summary>
         /// The indentation string to prepand to each line for each indentation level.
         /// </summary>
-        private const string IndentationString = "  ";
+        protected const string IndentationString = "  ";
 
         /// <summary>
         /// Scope of the Open API element - object, array, property.
@@ -54,12 +55,10 @@ namespace Microsoft.OpenApi.Writers
             Writer.NewLine = "\n";
 
             Scopes = new Stack<Scope>();
-
             if (settings == null)
             {
                 settings = new OpenApiWriterSettings();
             }
-
             Settings = settings;
         }
 
@@ -394,9 +393,9 @@ namespace Microsoft.OpenApi.Writers
         /// <param name="name">property name</param>
         protected void VerifyCanWritePropertyName(string name)
         {
-            if (string.IsNullOrWhiteSpace(name))
+            if (name == null)
             {
-                throw Error.ArgumentNullOrWhiteSpace(nameof(name));
+                throw Error.ArgumentNull(nameof(name));
             }
 
             if (Scopes.Count == 0)

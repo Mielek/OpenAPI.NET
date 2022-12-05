@@ -31,7 +31,7 @@ Changes:
 
 The **OpenAPI.NET** SDK contains a useful object model for OpenAPI documents in .NET along with common serializers to extract raw OpenAPI JSON and YAML documents from the model.
 
-**See more information on the OpenAPI specification and its history here: <a href="https://www.openapis.org">Open API Initiative</a>**
+**See more information on the OpenAPI specification and its history here: <a href="https://www.openapis.org">OpenAPI Initiative</a>**
 
 Project Objectives 
 
@@ -42,8 +42,8 @@ Project Objectives
 
 # Installation
 
-- Install core Nuget package `Microsoft.OpenApi`
-- Install readers Nuget package `Microsoft.OpenApi.Readers`
+- Install core Nuget package [**Microsoft.OpenApi**](https://www.nuget.org/packages/Microsoft.OpenApi)
+- Install readers Nuget package [**Microsoft.OpenApi.Readers**](https://www.nuget.org/packages/Microsoft.OpenApi.Readers)
 
 # Processors
 The OpenAPI.NET project holds the base object model for representing OpenAPI documents as .NET objects. Some developers have found the need to write processors that convert other data formats into this OpenAPI.NET object model. We'd like to curate that list of processors in this section of the readme. 

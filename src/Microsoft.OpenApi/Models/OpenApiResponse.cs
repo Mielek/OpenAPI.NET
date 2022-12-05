@@ -11,7 +11,7 @@ namespace Microsoft.OpenApi.Models
     /// <summary>
     /// Response object.
     /// </summary>
-    public class OpenApiResponse : IOpenApiSerializable, IOpenApiReferenceable, IOpenApiExtensible
+    public class OpenApiResponse : IOpenApiSerializable, IOpenApiReferenceable, IOpenApiExtensible, IEffective<OpenApiResponse>
     {
         /// <summary>
         /// REQUIRED. A short description of the response.
@@ -52,6 +52,25 @@ namespace Microsoft.OpenApi.Models
         public OpenApiReference Reference { get; set; }
 
         /// <summary>
+        /// Parameterless constructor
+        /// </summary>
+        public OpenApiResponse() {}
+
+        /// <summary>
+        /// Initializes a copy of <see cref="OpenApiResponse"/> object
+        /// </summary>
+        public OpenApiResponse(OpenApiResponse response)
+        {
+            Description = response?.Description ?? Description;
+            Headers = response?.Headers != null ? new Dictionary<string, OpenApiHeader>(response.Headers) : null;
+            Content = response?.Content != null ? new Dictionary<string, OpenApiMediaType>(response.Content) : null;
+            Links = response?.Links != null ? new Dictionary<string, OpenApiLink>(response.Links) : null;
+            Extensions = response?.Extensions != null ? new Dictionary<string, IOpenApiExtension>(response.Extensions) : null;
+            UnresolvedReference = response?.UnresolvedReference ?? UnresolvedReference;
+            Reference = response?.Reference != null ? new(response?.Reference) : null;
+        }
+
+        /// <summary>
         /// Serialize <see cref="OpenApiResponse"/> to Open Api v3.0.
         /// </summary>
         public void SerializeAsV3(IOpenApiWriter writer)
@@ -61,13 +80,38 @@ namespace Microsoft.OpenApi.Models
                 throw Error.ArgumentNull(nameof(writer));
             }
 
-            if (Reference != null && writer.GetSettings().ReferenceInline != ReferenceInlineSetting.InlineLocalReferences)
-            {
-                Reference.SerializeAsV3(writer);
-                return;
-            }
+            var target = this;
 
-            SerializeAsV3WithoutReference(writer);
+            if (Reference != null)
+            {
+                if (!writer.GetSettings().ShouldInlineReference(Reference))
+                {
+                    Reference.SerializeAsV3(writer);
+                    return;
+                }
+                else
+                {
+                    target = GetEffective(Reference.HostDocument);
+                }
+            }
+            target.SerializeAsV3WithoutReference(writer);
+        }
+
+        /// <summary>
+        /// Returns an effective OpenApiRequestBody object based on the presence of a $ref 
+        /// </summary>
+        /// <param name="doc">The host OpenApiDocument that contains the reference.</param>
+        /// <returns>OpenApiResponse</returns>
+        public OpenApiResponse GetEffective(OpenApiDocument doc)
+        {
+            if (this.Reference != null)
+            {
+                return doc.ResolveReferenceTo<OpenApiResponse>(this.Reference);
+            }
+            else
+            {
+                return this;
+            }
         }
 
         /// <summary>
@@ -105,13 +149,21 @@ namespace Microsoft.OpenApi.Models
                 throw Error.ArgumentNull(nameof(writer));
             }
 
-            if (Reference != null && writer.GetSettings().ReferenceInline != ReferenceInlineSetting.InlineLocalReferences)
-            {
-                Reference.SerializeAsV2(writer);
-                return;
-            }
+            var target = this;
 
-            SerializeAsV2WithoutReference(writer);
+            if (Reference != null)
+            {
+                if (!writer.GetSettings().ShouldInlineReference(Reference))
+                {
+                    Reference.SerializeAsV2(writer);
+                    return;
+                }
+                else
+                {
+                    target = GetEffective(Reference.HostDocument);
+                }
+            }
+            target.SerializeAsV2WithoutReference(writer);
         }
 
         /// <summary>

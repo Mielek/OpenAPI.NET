@@ -2,7 +2,6 @@
 // Licensed under the MIT license. 
 
 using System.Collections.Generic;
-using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Extensions;
 using Microsoft.OpenApi.Interfaces;
 using Microsoft.OpenApi.Writers;
@@ -12,7 +11,7 @@ namespace Microsoft.OpenApi.Models
     /// <summary>
     /// Path Item Object: to describe the operations available on a single path.
     /// </summary>
-    public class OpenApiPathItem : IOpenApiSerializable, IOpenApiExtensible
+    public class OpenApiPathItem : IOpenApiSerializable, IOpenApiExtensible, IOpenApiReferenceable, IEffective<OpenApiPathItem>
     {
         /// <summary>
         /// An optional, string summary, intended to apply to all operations in this path.
@@ -47,6 +46,16 @@ namespace Microsoft.OpenApi.Models
         public IDictionary<string, IOpenApiExtension> Extensions { get; set; } = new Dictionary<string, IOpenApiExtension>();
 
         /// <summary>
+        /// Indicates if object is populated with data or is just a reference to the data
+        /// </summary>
+        public bool UnresolvedReference { get; set; }
+
+        /// <summary>
+        /// Reference object.
+        /// </summary>
+        public OpenApiReference Reference { get; set; }
+
+        /// <summary>
         /// Add one operation into this path item.
         /// </summary>
         /// <param name="operationType">The operation type kind.</param>
@@ -54,6 +63,26 @@ namespace Microsoft.OpenApi.Models
         public void AddOperation(OperationType operationType, OpenApiOperation operation)
         {
             Operations[operationType] = operation;
+        }
+
+        /// <summary>
+        /// Parameterless constructor
+        /// </summary>
+        public OpenApiPathItem() {}
+
+        /// <summary>
+        /// Initializes a clone of an <see cref="OpenApiPathItem"/> object
+        /// </summary>
+        public OpenApiPathItem(OpenApiPathItem pathItem)
+        {
+            Summary = pathItem?.Summary ?? Summary;
+            Description = pathItem?.Description ?? Description;
+            Operations = pathItem?.Operations != null ? new Dictionary<OperationType, OpenApiOperation>(pathItem.Operations) : null;
+            Servers = pathItem?.Servers != null ? new List<OpenApiServer>(pathItem.Servers) : null;
+            Parameters = pathItem?.Parameters != null ? new List<OpenApiParameter>(pathItem.Parameters) : null;
+            Extensions = pathItem?.Extensions != null ? new Dictionary<string, IOpenApiExtension>(pathItem.Extensions) : null;
+            UnresolvedReference = pathItem?.UnresolvedReference ?? UnresolvedReference;
+            Reference = pathItem?.Reference != null ? new(pathItem?.Reference) : null;
         }
 
         /// <summary>
@@ -65,34 +94,38 @@ namespace Microsoft.OpenApi.Models
             {
                 throw Error.ArgumentNull(nameof(writer));
             }
+            var target = this;
 
-            writer.WriteStartObject();
-
-            // summary
-            writer.WriteProperty(OpenApiConstants.Summary, Summary);
-
-            // description
-            writer.WriteProperty(OpenApiConstants.Description, Description);
-
-            // operations
-            foreach (var operation in Operations)
+            if (Reference != null)
             {
-                writer.WriteOptionalObject(
-                    operation.Key.GetDisplayName(),
-                    operation.Value,
-                    (w, o) => o.SerializeAsV3(w));
+                if (!writer.GetSettings().ShouldInlineReference(Reference))
+                {
+                    Reference.SerializeAsV3(writer);
+                    return;
+                } 
+                else
+                {
+                    target = GetEffective(Reference.HostDocument);
+                }
             }
+            target.SerializeAsV3WithoutReference(writer);
+        }
 
-            // servers
-            writer.WriteOptionalCollection(OpenApiConstants.Servers, Servers, (w, s) => s.SerializeAsV3(w));
-
-            // parameters
-            writer.WriteOptionalCollection(OpenApiConstants.Parameters, Parameters, (w, p) => p.SerializeAsV3(w));
-
-            // specification extensions
-            writer.WriteExtensions(Extensions, OpenApiSpecVersion.OpenApi3_0);
-
-            writer.WriteEndObject();
+        /// <summary>
+        /// Returns an effective OpenApiPathItem object based on the presence of a $ref 
+        /// </summary>
+        /// <param name="doc">The host OpenApiDocument that contains the reference.</param>
+        /// <returns>OpenApiPathItem</returns>
+        public OpenApiPathItem GetEffective(OpenApiDocument doc)
+        {
+            if (this.Reference != null)
+            {
+                return doc.ResolveReferenceTo<OpenApiPathItem>(this.Reference);
+            }
+            else
+            {
+                return this;
+            }
         }
 
         /// <summary>
@@ -105,6 +138,30 @@ namespace Microsoft.OpenApi.Models
                 throw Error.ArgumentNull(nameof(writer));
             }
 
+            var target = this;
+
+            if (Reference != null)
+            {
+                if (!writer.GetSettings().ShouldInlineReference(Reference))
+                {
+                    Reference.SerializeAsV2(writer);
+                    return;
+                } 
+                else
+                {
+                    target = this.GetEffective(Reference.HostDocument);
+                }
+            }
+
+            target.SerializeAsV2WithoutReference(writer);
+        }
+
+        /// <summary>
+        /// Serialize inline PathItem in OpenAPI V2
+        /// </summary>
+        /// <param name="writer"></param>
+        public void SerializeAsV2WithoutReference(IOpenApiWriter writer)
+        {
             writer.WriteStartObject();
 
             // operations except "trace"
@@ -132,6 +189,43 @@ namespace Microsoft.OpenApi.Models
 
             // specification extensions
             writer.WriteExtensions(Extensions, OpenApiSpecVersion.OpenApi2_0);
+
+            writer.WriteEndObject();
+
+        }
+
+        /// <summary>
+        /// Serialize inline PathItem in OpenAPI V3
+        /// </summary>
+        /// <param name="writer"></param>
+        public void SerializeAsV3WithoutReference(IOpenApiWriter writer)
+        {
+
+            writer.WriteStartObject();
+
+            // summary
+            writer.WriteProperty(OpenApiConstants.Summary, Summary);
+
+            // description
+            writer.WriteProperty(OpenApiConstants.Description, Description);
+
+            // operations
+            foreach (var operation in Operations)
+            {
+                writer.WriteOptionalObject(
+                    operation.Key.GetDisplayName(),
+                    operation.Value,
+                    (w, o) => o.SerializeAsV3(w));
+            }
+
+            // servers
+            writer.WriteOptionalCollection(OpenApiConstants.Servers, Servers, (w, s) => s.SerializeAsV3(w));
+
+            // parameters
+            writer.WriteOptionalCollection(OpenApiConstants.Parameters, Parameters, (w, p) => p.SerializeAsV3(w));
+
+            // specification extensions
+            writer.WriteExtensions(Extensions, OpenApiSpecVersion.OpenApi3_0);
 
             writer.WriteEndObject();
         }

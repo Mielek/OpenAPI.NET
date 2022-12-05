@@ -2,6 +2,7 @@
 // Licensed under the MIT license. 
 
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Interfaces;
 using Microsoft.OpenApi.Writers;
@@ -11,7 +12,7 @@ namespace Microsoft.OpenApi.Models
     /// <summary>
     /// Schema Object.
     /// </summary>
-    public class OpenApiSchema : IOpenApiSerializable, IOpenApiReferenceable, IOpenApiExtensible
+    public class OpenApiSchema : IOpenApiSerializable, IOpenApiReferenceable, IEffective<OpenApiSchema>, IOpenApiExtensible
     {
         /// <summary>
         /// Follow JSON Schema definition. Short text providing information about the data.
@@ -242,6 +243,56 @@ namespace Microsoft.OpenApi.Models
         public OpenApiReference Reference { get; set; }
 
         /// <summary>
+        /// Parameterless constructor
+        /// </summary>
+        public OpenApiSchema() {}
+
+        /// <summary>
+        /// Initializes a copy of <see cref="OpenApiSchema"/> object
+        /// </summary>
+        public OpenApiSchema(OpenApiSchema schema)
+        {
+            Title = schema?.Title ?? Title;
+            Type = schema?.Type ?? Type;
+            Format = schema?.Format ?? Format;
+            Description = schema?.Description ?? Description;
+            Maximum = schema?.Maximum ?? Maximum;
+            ExclusiveMaximum = schema?.ExclusiveMaximum ?? ExclusiveMaximum;
+            Minimum = schema?.Minimum ?? Minimum;
+            ExclusiveMinimum = schema?.ExclusiveMinimum ?? ExclusiveMinimum;
+            MaxLength = schema?.MaxLength ?? MaxLength;
+            MinLength = schema?.MinLength ?? MinLength;
+            Pattern = schema?.Pattern ?? Pattern;
+            MultipleOf = schema?.MultipleOf ?? MultipleOf;
+            Default = OpenApiAnyCloneHelper.CloneFromCopyConstructor(schema?.Default);
+            ReadOnly = schema?.ReadOnly ?? ReadOnly;
+            WriteOnly = schema?.WriteOnly ?? WriteOnly;
+            AllOf = schema?.AllOf != null ? new List<OpenApiSchema>(schema.AllOf) : null;
+            OneOf = schema?.OneOf != null ? new List<OpenApiSchema>(schema.OneOf) : null;
+            AnyOf = schema?.AnyOf != null ? new List<OpenApiSchema>(schema.AnyOf) : null;
+            Not = schema?.Not != null ? new(schema?.Not) : null;
+            Required = schema?.Required != null ? new HashSet<string>(schema.Required) : null;
+            Items = schema?.Items != null ? new(schema?.Items) : null;
+            MaxItems = schema?.MaxItems ?? MaxItems;
+            MinItems = schema?.MinItems ?? MinItems;
+            UniqueItems = schema?.UniqueItems ?? UniqueItems;
+            Properties = schema?.Properties != null ? new Dictionary<string, OpenApiSchema>(schema.Properties) : null;
+            MaxProperties = schema?.MaxProperties ?? MaxProperties;
+            MinProperties = schema?.MinProperties ?? MinProperties;
+            AdditionalPropertiesAllowed = schema?.AdditionalPropertiesAllowed ?? AdditionalPropertiesAllowed;
+            AdditionalProperties = new(schema?.AdditionalProperties);
+            Discriminator = schema?.Discriminator != null ? new(schema?.Discriminator) : null;
+            Example = OpenApiAnyCloneHelper.CloneFromCopyConstructor(schema?.Example);
+            Enum = schema?.Enum != null ? new List<IOpenApiAny>(schema.Enum) : null;
+            Nullable = schema?.Nullable ?? Nullable;
+            ExternalDocs = schema?.ExternalDocs != null ? new(schema?.ExternalDocs) : null;
+            Deprecated = schema?.Deprecated ?? Deprecated;
+            Xml = schema?.Xml != null ? new(schema?.Xml) : null;
+            UnresolvedReference = schema?.UnresolvedReference ?? UnresolvedReference;
+            Reference = schema?.Reference != null ? new(schema?.Reference) : null;
+        }
+
+        /// <summary>
         /// Serialize <see cref="OpenApiSchema"/> to Open Api v3.0
         /// </summary>
         public void SerializeAsV3(IOpenApiWriter writer)
@@ -252,13 +303,21 @@ namespace Microsoft.OpenApi.Models
             }
 
             var settings = writer.GetSettings();
+            var target = this;
 
             if (Reference != null)
             {
-                if (settings.ReferenceInline != ReferenceInlineSetting.InlineLocalReferences)
+                if (!settings.ShouldInlineReference(Reference))
                 {
                     Reference.SerializeAsV3(writer);
                     return;
+                }
+                else
+                {
+                    if (Reference.IsExternal)  // Temporary until v2
+                    {
+                        target = this.GetEffective(Reference.HostDocument);
+                    }
                 }
 
                 // If Loop is detected then just Serialize as a reference.
@@ -270,7 +329,7 @@ namespace Microsoft.OpenApi.Models
                 }
             }
 
-            SerializeAsV3WithoutReference(writer);
+            target.SerializeAsV3WithoutReference(writer);
 
             if (Reference != null)
             {
@@ -283,6 +342,7 @@ namespace Microsoft.OpenApi.Models
         /// </summary>
         public void SerializeAsV3WithoutReference(IOpenApiWriter writer)
         {
+
             writer.WriteStartObject();
 
             // title
@@ -442,13 +502,22 @@ namespace Microsoft.OpenApi.Models
                 throw Error.ArgumentNull(nameof(writer));
             }
 
+            var settings = writer.GetSettings();
+            var target = this;
+
             if (Reference != null)
             {
-                var settings = writer.GetSettings();
-                if (settings.ReferenceInline != ReferenceInlineSetting.InlineLocalReferences)
+                if (!settings.ShouldInlineReference(Reference))
                 {
                     Reference.SerializeAsV2(writer);
                     return;
+                }
+                else
+                {
+                    if (Reference.IsExternal)  // Temporary until v2
+                    {
+                        target = this.GetEffective(Reference.HostDocument);
+                    }
                 }
 
                 // If Loop is detected then just Serialize as a reference.
@@ -466,7 +535,7 @@ namespace Microsoft.OpenApi.Models
                 parentRequiredProperties = new HashSet<string>();
             }
 
-            SerializeAsV2WithoutReference(writer, parentRequiredProperties, propertyName);
+            target.SerializeAsV2WithoutReference(writer, parentRequiredProperties, propertyName);
         }
 
         /// <summary>
@@ -497,6 +566,13 @@ namespace Microsoft.OpenApi.Models
             writer.WriteProperty(OpenApiConstants.Type, Type);
 
             // format
+            if (string.IsNullOrEmpty(Format))
+            {
+                Format = AllOf?.FirstOrDefault(static x => !string.IsNullOrEmpty(x.Format))?.Format ??
+                    AnyOf?.FirstOrDefault(static x => !string.IsNullOrEmpty(x.Format))?.Format ??
+                    OneOf?.FirstOrDefault(static x => !string.IsNullOrEmpty(x.Format))?.Format;
+            }
+            
             writer.WriteProperty(OpenApiConstants.Format, Format);
 
             // items
@@ -561,6 +637,13 @@ namespace Microsoft.OpenApi.Models
             }
 
             // format
+            if (string.IsNullOrEmpty(Format))
+            {
+                Format = AllOf?.FirstOrDefault(static x => !string.IsNullOrEmpty(x.Format))?.Format ??
+                    AnyOf?.FirstOrDefault(static x => !string.IsNullOrEmpty(x.Format))?.Format ??
+                    OneOf?.FirstOrDefault(static x => !string.IsNullOrEmpty(x.Format))?.Format;
+            }
+
             writer.WriteProperty(OpenApiConstants.Format, Format);
 
             // title
@@ -626,15 +709,36 @@ namespace Microsoft.OpenApi.Models
             // allOf
             writer.WriteOptionalCollection(OpenApiConstants.AllOf, AllOf, (w, s) => s.SerializeAsV2(w));
 
+            // If there isn't already an allOf, and the schema contains a oneOf or anyOf write an allOf with the first
+            // schema in the list as an attempt to guess at a graceful downgrade situation.
+            if (AllOf == null || AllOf.Count == 0)
+            {
+                // anyOf (Not Supported in V2)  - Write the first schema only as an allOf.
+                writer.WriteOptionalCollection(OpenApiConstants.AllOf, AnyOf?.Take(1), (w, s) => s.SerializeAsV2(w));
+
+                if (AnyOf == null || AnyOf.Count == 0)
+                {
+                    // oneOf (Not Supported in V2) - Write the first schema only as an allOf.
+                    writer.WriteOptionalCollection(OpenApiConstants.AllOf, OneOf?.Take(1), (w, s) => s.SerializeAsV2(w));
+                }
+            }
+
             // properties
             writer.WriteOptionalMap(OpenApiConstants.Properties, Properties, (w, key, s) =>
                 s.SerializeAsV2(w, Required, key));
 
             // additionalProperties
-            writer.WriteOptionalObject(
-                OpenApiConstants.AdditionalProperties,
-                AdditionalProperties,
-                (w, s) => s.SerializeAsV2(w));
+            if (AdditionalPropertiesAllowed)
+            {
+                writer.WriteOptionalObject(
+                    OpenApiConstants.AdditionalProperties,
+                    AdditionalProperties,
+                    (w, s) => s.SerializeAsV2(w));
+            }
+            else
+            {
+                writer.WriteProperty(OpenApiConstants.AdditionalProperties, AdditionalPropertiesAllowed);
+            }
 
             // discriminator
             writer.WriteProperty(OpenApiConstants.Discriminator, Discriminator?.PropertyName);
@@ -658,6 +762,22 @@ namespace Microsoft.OpenApi.Models
 
             // extensions
             writer.WriteExtensions(Extensions, OpenApiSpecVersion.OpenApi2_0);
+        }
+
+        /// <summary>
+        /// Returns an effective OpenApiSchema object based on the presence of a $ref 
+        /// </summary>
+        /// <param name="doc">The host OpenApiDocument that contains the reference.</param>
+        /// <returns>OpenApiSchema</returns>
+        public OpenApiSchema GetEffective(OpenApiDocument doc)
+        {
+            if (this.Reference != null)
+            {
+                return doc.ResolveReferenceTo<OpenApiSchema>(this.Reference);
+            } else
+            {
+                return this;
+            }
         }
     }
 }

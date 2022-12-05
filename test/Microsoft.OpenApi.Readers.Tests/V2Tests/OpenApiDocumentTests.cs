@@ -8,14 +8,22 @@ using System.Threading;
 using FluentAssertions;
 using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Exceptions;
+using Microsoft.OpenApi.Extensions;
+using Microsoft.OpenApi.Interfaces;
 using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi.Writers;
 using Xunit;
 
 namespace Microsoft.OpenApi.Readers.Tests.V2Tests
 {
+
+
     public class OpenApiDocumentTests
     {
         private const string SampleFolderPath = "V2Tests/Samples/";
+
+
+
 
         [Fact]
         public void ShouldThrowWhenReferenceTypeIsInvalid()
@@ -96,7 +104,7 @@ definitions:
       sampleProperty:
         type: double
         minimum: 100.54
-        maximum: 60,000,000.35
+        maximum: 60000000.35
         exclusiveMaximum: true
         exclusiveMinimum: false
 paths: {}",
@@ -161,23 +169,16 @@ paths: {}",
                     Reference = new OpenApiReference
                     {
                         Type = ReferenceType.Schema,
-                        Id = "Item"
+                        Id = "Item",
+                        HostDocument = doc
                     },
                     Items = new OpenApiSchema()
                     {
-                        //Properties = new Dictionary<string, OpenApiSchema>()
-                        //                    {
-                        //                        { "id", new OpenApiSchema()
-                        //                            {
-                        //                                Type = "string",
-                        //                                Description = "Item identifier."
-                        //                            }
-                        //                        }
-                        //                    },
                         Reference = new OpenApiReference()
                         {
                             Type = ReferenceType.Schema,
-                            Id = "Item"
+                            Id = "Item",
+                            HostDocument = doc
                         }
                     }
                 };
@@ -187,7 +188,8 @@ paths: {}",
                     Reference = new OpenApiReference
                     {
                         Type = ReferenceType.Schema,
-                        Id = "Item"
+                        Id = "Item",
+                        HostDocument = doc
                     },
                     Properties = new Dictionary<string, OpenApiSchema>()
                                                     {
@@ -205,7 +207,8 @@ paths: {}",
                     Reference = new OpenApiReference
                     {
                         Type = ReferenceType.Schema,
-                        Id = "Error"
+                        Id = "Error",
+                        HostDocument = doc
                     },
                     Properties = new Dictionary<string, OpenApiSchema>()
                                                     {
@@ -375,7 +378,8 @@ paths: {}",
                     Reference = new OpenApiReference
                     {
                         Id = "Item",
-                        Type = ReferenceType.Schema
+                        Type = ReferenceType.Schema,
+                        HostDocument = document
                     }
                 }
             };
@@ -402,7 +406,8 @@ paths: {}",
                 Reference = new OpenApiReference
                 {
                     Id = "Error",
-                    Type = ReferenceType.Schema
+                    Type = ReferenceType.Schema,
+                    HostDocument = document
                 }
             };
             var responses = document.Paths["/items"].Operations[OperationType.Get].Responses;
@@ -430,7 +435,7 @@ paths: {}",
                 OpenApiDocument doc = reader.Read(stream, out OpenApiDiagnostic diags);
                 OpenApiSchema schema1 = doc.Components.Schemas["AllPets"];
                 Assert.False(schema1.UnresolvedReference);
-                OpenApiSchema schema2 = (OpenApiSchema)doc.ResolveReference(schema1.Reference);
+                OpenApiSchema schema2 = doc.ResolveReferenceTo<OpenApiSchema>(schema1.Reference);
                 if (schema2.UnresolvedReference && schema1.Reference.Id == schema2.Reference.Id)
                 {
                     // detected a cycle - this code gets triggered

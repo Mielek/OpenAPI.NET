@@ -1,6 +1,6 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <TargetFrameworks>net46;net461</TargetFrameworks>
+        <TargetFrameworks>net7.0</TargetFrameworks>
         <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
         <Authors></Authors>
         <Company>Microsoft</Company>
@@ -14,6 +14,10 @@
     </PropertyGroup>
     <ItemGroup>
       <None Remove="V2Tests\Samples\ComponentRootReference.json" />
+      <None Remove="V2Tests\Samples\OpenApiPathItem\pathItemWithBodyPathParameter.yaml" />
+      <None Remove="V2Tests\Samples\OpenApiPathItem\pathItemWithFormDataPathParameter.yaml" />
+      <None Remove="V3Tests\Samples\OpenApiWorkspace\TodoComponents.yaml" />
+      <None Remove="V3Tests\Samples\OpenApiWorkspace\TodoMain.yaml" />
     </ItemGroup>
     <ItemGroup>
       <EmbeddedResource Include="OpenApiReaderTests\Samples\unsupported.v1.yaml">
@@ -83,6 +87,12 @@
       <EmbeddedResource Include="V2Tests\Samples\OpenApiParameter\queryParameter.yaml">
         <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       </EmbeddedResource>
+      <EmbeddedResource Include="V2Tests\Samples\OpenApiPathItem\pathItemWithFormDataPathParameter.yaml">
+        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <EmbeddedResource Include="V2Tests\Samples\OpenApiPathItem\pathItemWithBodyPathParameter.yaml">
+        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      </EmbeddedResource>
       <EmbeddedResource Include="V2Tests\Samples\OpenApiPathItem\basicPathItemWithFormData.yaml">
         <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       </EmbeddedResource>
@@ -137,6 +147,9 @@
         <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       </EmbeddedResource>
       <EmbeddedResource Include="V3Tests\Samples\OpenApiDocument\petStoreWithTagAndSecurity.yaml">
+        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <EmbeddedResource Include="V3Tests\Samples\OpenApiDocument\documentWithExternalRefs.yaml">
         <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       </EmbeddedResource>
       <EmbeddedResource Include="V3Tests\Samples\OpenApiDocument\securedApi.yaml" />
@@ -232,22 +245,24 @@
       <EmbeddedResource Include="V3Tests\Samples\OpenApiSecurityScheme\openIdConnectSecurityScheme.yaml">
         <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       </EmbeddedResource>
+      <EmbeddedResource Include="V3Tests\Samples\OpenApiWorkspace\TodoComponents.yaml" />
+      <EmbeddedResource Include="V3Tests\Samples\OpenApiWorkspace\TodoMain.yaml" />
       <EmbeddedResource Include="V3Tests\Samples\OpenApiXml\basicXml.yaml">
         <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       </EmbeddedResource>
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.4.0" />
-        <PackageReference Include="FluentAssertions" Version="5.10.0">
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.4.0" />
+        <PackageReference Include="FluentAssertions" Version="6.8.0">
         </PackageReference>
-        <PackageReference Include="Newtonsoft.Json" Version="12.0.3">
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.2-beta2">
         </PackageReference>
-        <PackageReference Include="SharpYaml" Version="1.6.5">
+        <PackageReference Include="SharpYaml" Version="2.1.0">
         </PackageReference>
-        <PackageReference Include="xunit" Version="2.4.1">
+        <PackageReference Include="xunit" Version="2.4.2">
         </PackageReference>
-        <PackageReference Include="xunit.runner.visualstudio" Version="2.4.1">
+        <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5">
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
@@ -257,12 +272,7 @@
         <ProjectReference Include="..\..\src\Microsoft.OpenApi\Microsoft.OpenApi.csproj" />
         <ProjectReference Include="..\..\src\Microsoft.OpenApi.Readers\Microsoft.OpenApi.Readers.csproj" />
     </ItemGroup>
-
-    <ItemGroup>
-        <Reference Include="Microsoft.CSharp" />
-        <Reference Include="System.Net.Http" />
-    </ItemGroup>
-
+  
     <ItemGroup>
         <None Update="V2Tests\Samples\definitions.v3.yaml">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

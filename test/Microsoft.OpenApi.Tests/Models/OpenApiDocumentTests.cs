@@ -1,21 +1,25 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. 
 
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.OpenApi.Extensions;
 using Microsoft.OpenApi.Interfaces;
 using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi.Readers;
 using Microsoft.OpenApi.Writers;
+using VerifyXunit;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Microsoft.OpenApi.Tests.Models
 {
     [Collection("DefaultSettings")]
+    [UsesVerify]
     public class OpenApiDocumentTests
     {
         public static OpenApiComponents TopLevelReferencingComponents = new OpenApiComponents()
@@ -982,508 +986,14 @@ namespace Microsoft.OpenApi.Tests.Models
             _output = output;
         }
 
-        [Fact]
-        public void SerializeAdvancedDocumentAsV3JsonWorks()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task SerializeAdvancedDocumentAsV3JsonWorks(bool produceTerseOutput)
         {
             // Arrange
             var outputStringWriter = new StringWriter(CultureInfo.InvariantCulture);
-            var writer = new OpenApiJsonWriter(outputStringWriter);
-            var expected =
-                @"{
-  ""openapi"": ""3.0.1"",
-  ""info"": {
-    ""title"": ""Swagger Petstore (Simple)"",
-    ""description"": ""A sample API that uses a petstore as an example to demonstrate features in the swagger-2.0 specification"",
-    ""termsOfService"": ""http://helloreverb.com/terms/"",
-    ""contact"": {
-      ""name"": ""Swagger API team"",
-      ""url"": ""http://swagger.io"",
-      ""email"": ""foo@example.com""
-    },
-    ""license"": {
-      ""name"": ""MIT"",
-      ""url"": ""http://opensource.org/licenses/MIT""
-    },
-    ""version"": ""1.0.0""
-  },
-  ""servers"": [
-    {
-      ""url"": ""http://petstore.swagger.io/api""
-    }
-  ],
-  ""paths"": {
-    ""/pets"": {
-      ""get"": {
-        ""description"": ""Returns all pets from the system that the user has access to"",
-        ""operationId"": ""findPets"",
-        ""parameters"": [
-          {
-            ""name"": ""tags"",
-            ""in"": ""query"",
-            ""description"": ""tags to filter by"",
-            ""schema"": {
-              ""type"": ""array"",
-              ""items"": {
-                ""type"": ""string""
-              }
-            }
-          },
-          {
-            ""name"": ""limit"",
-            ""in"": ""query"",
-            ""description"": ""maximum number of results to return"",
-            ""schema"": {
-              ""type"": ""integer"",
-              ""format"": ""int32""
-            }
-          }
-        ],
-        ""responses"": {
-          ""200"": {
-            ""description"": ""pet response"",
-            ""content"": {
-              ""application/json"": {
-                ""schema"": {
-                  ""type"": ""array"",
-                  ""items"": {
-                    ""required"": [
-                      ""id"",
-                      ""name""
-                    ],
-                    ""type"": ""object"",
-                    ""properties"": {
-                      ""id"": {
-                        ""type"": ""integer"",
-                        ""format"": ""int64""
-                      },
-                      ""name"": {
-                        ""type"": ""string""
-                      },
-                      ""tag"": {
-                        ""type"": ""string""
-                      }
-                    }
-                  }
-                }
-              },
-              ""application/xml"": {
-                ""schema"": {
-                  ""type"": ""array"",
-                  ""items"": {
-                    ""required"": [
-                      ""id"",
-                      ""name""
-                    ],
-                    ""type"": ""object"",
-                    ""properties"": {
-                      ""id"": {
-                        ""type"": ""integer"",
-                        ""format"": ""int64""
-                      },
-                      ""name"": {
-                        ""type"": ""string""
-                      },
-                      ""tag"": {
-                        ""type"": ""string""
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          ""4XX"": {
-            ""description"": ""unexpected client error"",
-            ""content"": {
-              ""text/html"": {
-                ""schema"": {
-                  ""required"": [
-                    ""code"",
-                    ""message""
-                  ],
-                  ""type"": ""object"",
-                  ""properties"": {
-                    ""code"": {
-                      ""type"": ""integer"",
-                      ""format"": ""int32""
-                    },
-                    ""message"": {
-                      ""type"": ""string""
-                    }
-                  }
-                }
-              }
-            }
-          },
-          ""5XX"": {
-            ""description"": ""unexpected server error"",
-            ""content"": {
-              ""text/html"": {
-                ""schema"": {
-                  ""required"": [
-                    ""code"",
-                    ""message""
-                  ],
-                  ""type"": ""object"",
-                  ""properties"": {
-                    ""code"": {
-                      ""type"": ""integer"",
-                      ""format"": ""int32""
-                    },
-                    ""message"": {
-                      ""type"": ""string""
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      ""post"": {
-        ""description"": ""Creates a new pet in the store.  Duplicates are allowed"",
-        ""operationId"": ""addPet"",
-        ""requestBody"": {
-          ""description"": ""Pet to add to the store"",
-          ""content"": {
-            ""application/json"": {
-              ""schema"": {
-                ""required"": [
-                  ""name""
-                ],
-                ""type"": ""object"",
-                ""properties"": {
-                  ""id"": {
-                    ""type"": ""integer"",
-                    ""format"": ""int64""
-                  },
-                  ""name"": {
-                    ""type"": ""string""
-                  },
-                  ""tag"": {
-                    ""type"": ""string""
-                  }
-                }
-              }
-            }
-          },
-          ""required"": true
-        },
-        ""responses"": {
-          ""200"": {
-            ""description"": ""pet response"",
-            ""content"": {
-              ""application/json"": {
-                ""schema"": {
-                  ""required"": [
-                    ""id"",
-                    ""name""
-                  ],
-                  ""type"": ""object"",
-                  ""properties"": {
-                    ""id"": {
-                      ""type"": ""integer"",
-                      ""format"": ""int64""
-                    },
-                    ""name"": {
-                      ""type"": ""string""
-                    },
-                    ""tag"": {
-                      ""type"": ""string""
-                    }
-                  }
-                }
-              }
-            }
-          },
-          ""4XX"": {
-            ""description"": ""unexpected client error"",
-            ""content"": {
-              ""text/html"": {
-                ""schema"": {
-                  ""required"": [
-                    ""code"",
-                    ""message""
-                  ],
-                  ""type"": ""object"",
-                  ""properties"": {
-                    ""code"": {
-                      ""type"": ""integer"",
-                      ""format"": ""int32""
-                    },
-                    ""message"": {
-                      ""type"": ""string""
-                    }
-                  }
-                }
-              }
-            }
-          },
-          ""5XX"": {
-            ""description"": ""unexpected server error"",
-            ""content"": {
-              ""text/html"": {
-                ""schema"": {
-                  ""required"": [
-                    ""code"",
-                    ""message""
-                  ],
-                  ""type"": ""object"",
-                  ""properties"": {
-                    ""code"": {
-                      ""type"": ""integer"",
-                      ""format"": ""int32""
-                    },
-                    ""message"": {
-                      ""type"": ""string""
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    ""/pets/{id}"": {
-      ""get"": {
-        ""description"": ""Returns a user based on a single ID, if the user does not have access to the pet"",
-        ""operationId"": ""findPetById"",
-        ""parameters"": [
-          {
-            ""name"": ""id"",
-            ""in"": ""path"",
-            ""description"": ""ID of pet to fetch"",
-            ""required"": true,
-            ""schema"": {
-              ""type"": ""integer"",
-              ""format"": ""int64""
-            }
-          }
-        ],
-        ""responses"": {
-          ""200"": {
-            ""description"": ""pet response"",
-            ""content"": {
-              ""application/json"": {
-                ""schema"": {
-                  ""required"": [
-                    ""id"",
-                    ""name""
-                  ],
-                  ""type"": ""object"",
-                  ""properties"": {
-                    ""id"": {
-                      ""type"": ""integer"",
-                      ""format"": ""int64""
-                    },
-                    ""name"": {
-                      ""type"": ""string""
-                    },
-                    ""tag"": {
-                      ""type"": ""string""
-                    }
-                  }
-                }
-              },
-              ""application/xml"": {
-                ""schema"": {
-                  ""required"": [
-                    ""id"",
-                    ""name""
-                  ],
-                  ""type"": ""object"",
-                  ""properties"": {
-                    ""id"": {
-                      ""type"": ""integer"",
-                      ""format"": ""int64""
-                    },
-                    ""name"": {
-                      ""type"": ""string""
-                    },
-                    ""tag"": {
-                      ""type"": ""string""
-                    }
-                  }
-                }
-              }
-            }
-          },
-          ""4XX"": {
-            ""description"": ""unexpected client error"",
-            ""content"": {
-              ""text/html"": {
-                ""schema"": {
-                  ""required"": [
-                    ""code"",
-                    ""message""
-                  ],
-                  ""type"": ""object"",
-                  ""properties"": {
-                    ""code"": {
-                      ""type"": ""integer"",
-                      ""format"": ""int32""
-                    },
-                    ""message"": {
-                      ""type"": ""string""
-                    }
-                  }
-                }
-              }
-            }
-          },
-          ""5XX"": {
-            ""description"": ""unexpected server error"",
-            ""content"": {
-              ""text/html"": {
-                ""schema"": {
-                  ""required"": [
-                    ""code"",
-                    ""message""
-                  ],
-                  ""type"": ""object"",
-                  ""properties"": {
-                    ""code"": {
-                      ""type"": ""integer"",
-                      ""format"": ""int32""
-                    },
-                    ""message"": {
-                      ""type"": ""string""
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      ""delete"": {
-        ""description"": ""deletes a single pet based on the ID supplied"",
-        ""operationId"": ""deletePet"",
-        ""parameters"": [
-          {
-            ""name"": ""id"",
-            ""in"": ""path"",
-            ""description"": ""ID of pet to delete"",
-            ""required"": true,
-            ""schema"": {
-              ""type"": ""integer"",
-              ""format"": ""int64""
-            }
-          }
-        ],
-        ""responses"": {
-          ""204"": {
-            ""description"": ""pet deleted""
-          },
-          ""4XX"": {
-            ""description"": ""unexpected client error"",
-            ""content"": {
-              ""text/html"": {
-                ""schema"": {
-                  ""required"": [
-                    ""code"",
-                    ""message""
-                  ],
-                  ""type"": ""object"",
-                  ""properties"": {
-                    ""code"": {
-                      ""type"": ""integer"",
-                      ""format"": ""int32""
-                    },
-                    ""message"": {
-                      ""type"": ""string""
-                    }
-                  }
-                }
-              }
-            }
-          },
-          ""5XX"": {
-            ""description"": ""unexpected server error"",
-            ""content"": {
-              ""text/html"": {
-                ""schema"": {
-                  ""required"": [
-                    ""code"",
-                    ""message""
-                  ],
-                  ""type"": ""object"",
-                  ""properties"": {
-                    ""code"": {
-                      ""type"": ""integer"",
-                      ""format"": ""int32""
-                    },
-                    ""message"": {
-                      ""type"": ""string""
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  },
-  ""components"": {
-    ""schemas"": {
-      ""pet"": {
-        ""required"": [
-          ""id"",
-          ""name""
-        ],
-        ""type"": ""object"",
-        ""properties"": {
-          ""id"": {
-            ""type"": ""integer"",
-            ""format"": ""int64""
-          },
-          ""name"": {
-            ""type"": ""string""
-          },
-          ""tag"": {
-            ""type"": ""string""
-          }
-        }
-      },
-      ""newPet"": {
-        ""required"": [
-          ""name""
-        ],
-        ""type"": ""object"",
-        ""properties"": {
-          ""id"": {
-            ""type"": ""integer"",
-            ""format"": ""int64""
-          },
-          ""name"": {
-            ""type"": ""string""
-          },
-          ""tag"": {
-            ""type"": ""string""
-          }
-        }
-      },
-      ""errorModel"": {
-        ""required"": [
-          ""code"",
-          ""message""
-        ],
-        ""type"": ""object"",
-        ""properties"": {
-          ""code"": {
-            ""type"": ""integer"",
-            ""format"": ""int32""
-          },
-          ""message"": {
-            ""type"": ""string""
-          }
-        }
-      }
-    }
-  }
-}";
+            var writer = new OpenApiJsonWriter(outputStringWriter, new OpenApiJsonWriterSettings { Terse = produceTerseOutput });
 
             // Act
             AdvancedDocument.SerializeAsV3(writer);
@@ -1491,314 +1001,17 @@ namespace Microsoft.OpenApi.Tests.Models
             var actual = outputStringWriter.GetStringBuilder().ToString();
 
             // Assert
-            actual = actual.MakeLineBreaksEnvironmentNeutral();
-            expected = expected.MakeLineBreaksEnvironmentNeutral();
-            actual.Should().Be(expected);
+            await Verifier.Verify(actual).UseParameters(produceTerseOutput);
         }
 
-        [Fact]
-        public void SerializeAdvancedDocumentWithReferenceAsV3JsonWorks()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task SerializeAdvancedDocumentWithReferenceAsV3JsonWorks(bool produceTerseOutput)
         {
             // Arrange
             var outputStringWriter = new StringWriter(CultureInfo.InvariantCulture);
-            var writer = new OpenApiJsonWriter(outputStringWriter);
-            var expected =
-                @"{
-  ""openapi"": ""3.0.1"",
-  ""info"": {
-    ""title"": ""Swagger Petstore (Simple)"",
-    ""description"": ""A sample API that uses a petstore as an example to demonstrate features in the swagger-2.0 specification"",
-    ""termsOfService"": ""http://helloreverb.com/terms/"",
-    ""contact"": {
-      ""name"": ""Swagger API team"",
-      ""url"": ""http://swagger.io"",
-      ""email"": ""foo@example.com""
-    },
-    ""license"": {
-      ""name"": ""MIT"",
-      ""url"": ""http://opensource.org/licenses/MIT""
-    },
-    ""version"": ""1.0.0""
-  },
-  ""servers"": [
-    {
-      ""url"": ""http://petstore.swagger.io/api""
-    }
-  ],
-  ""paths"": {
-    ""/pets"": {
-      ""get"": {
-        ""description"": ""Returns all pets from the system that the user has access to"",
-        ""operationId"": ""findPets"",
-        ""parameters"": [
-          {
-            ""name"": ""tags"",
-            ""in"": ""query"",
-            ""description"": ""tags to filter by"",
-            ""schema"": {
-              ""type"": ""array"",
-              ""items"": {
-                ""type"": ""string""
-              }
-            }
-          },
-          {
-            ""name"": ""limit"",
-            ""in"": ""query"",
-            ""description"": ""maximum number of results to return"",
-            ""schema"": {
-              ""type"": ""integer"",
-              ""format"": ""int32""
-            }
-          }
-        ],
-        ""responses"": {
-          ""200"": {
-            ""description"": ""pet response"",
-            ""content"": {
-              ""application/json"": {
-                ""schema"": {
-                  ""type"": ""array"",
-                  ""items"": {
-                    ""$ref"": ""#/components/schemas/pet""
-                  }
-                }
-              },
-              ""application/xml"": {
-                ""schema"": {
-                  ""type"": ""array"",
-                  ""items"": {
-                    ""$ref"": ""#/components/schemas/pet""
-                  }
-                }
-              }
-            }
-          },
-          ""4XX"": {
-            ""description"": ""unexpected client error"",
-            ""content"": {
-              ""text/html"": {
-                ""schema"": {
-                  ""$ref"": ""#/components/schemas/errorModel""
-                }
-              }
-            }
-          },
-          ""5XX"": {
-            ""description"": ""unexpected server error"",
-            ""content"": {
-              ""text/html"": {
-                ""schema"": {
-                  ""$ref"": ""#/components/schemas/errorModel""
-                }
-              }
-            }
-          }
-        }
-      },
-      ""post"": {
-        ""description"": ""Creates a new pet in the store.  Duplicates are allowed"",
-        ""operationId"": ""addPet"",
-        ""requestBody"": {
-          ""description"": ""Pet to add to the store"",
-          ""content"": {
-            ""application/json"": {
-              ""schema"": {
-                ""$ref"": ""#/components/schemas/newPet""
-              }
-            }
-          },
-          ""required"": true
-        },
-        ""responses"": {
-          ""200"": {
-            ""description"": ""pet response"",
-            ""content"": {
-              ""application/json"": {
-                ""schema"": {
-                  ""$ref"": ""#/components/schemas/pet""
-                }
-              }
-            }
-          },
-          ""4XX"": {
-            ""description"": ""unexpected client error"",
-            ""content"": {
-              ""text/html"": {
-                ""schema"": {
-                  ""$ref"": ""#/components/schemas/errorModel""
-                }
-              }
-            }
-          },
-          ""5XX"": {
-            ""description"": ""unexpected server error"",
-            ""content"": {
-              ""text/html"": {
-                ""schema"": {
-                  ""$ref"": ""#/components/schemas/errorModel""
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    ""/pets/{id}"": {
-      ""get"": {
-        ""description"": ""Returns a user based on a single ID, if the user does not have access to the pet"",
-        ""operationId"": ""findPetById"",
-        ""parameters"": [
-          {
-            ""name"": ""id"",
-            ""in"": ""path"",
-            ""description"": ""ID of pet to fetch"",
-            ""required"": true,
-            ""schema"": {
-              ""type"": ""integer"",
-              ""format"": ""int64""
-            }
-          }
-        ],
-        ""responses"": {
-          ""200"": {
-            ""description"": ""pet response"",
-            ""content"": {
-              ""application/json"": {
-                ""schema"": {
-                  ""$ref"": ""#/components/schemas/pet""
-                }
-              },
-              ""application/xml"": {
-                ""schema"": {
-                  ""$ref"": ""#/components/schemas/pet""
-                }
-              }
-            }
-          },
-          ""4XX"": {
-            ""description"": ""unexpected client error"",
-            ""content"": {
-              ""text/html"": {
-                ""schema"": {
-                  ""$ref"": ""#/components/schemas/errorModel""
-                }
-              }
-            }
-          },
-          ""5XX"": {
-            ""description"": ""unexpected server error"",
-            ""content"": {
-              ""text/html"": {
-                ""schema"": {
-                  ""$ref"": ""#/components/schemas/errorModel""
-                }
-              }
-            }
-          }
-        }
-      },
-      ""delete"": {
-        ""description"": ""deletes a single pet based on the ID supplied"",
-        ""operationId"": ""deletePet"",
-        ""parameters"": [
-          {
-            ""name"": ""id"",
-            ""in"": ""path"",
-            ""description"": ""ID of pet to delete"",
-            ""required"": true,
-            ""schema"": {
-              ""type"": ""integer"",
-              ""format"": ""int64""
-            }
-          }
-        ],
-        ""responses"": {
-          ""204"": {
-            ""description"": ""pet deleted""
-          },
-          ""4XX"": {
-            ""description"": ""unexpected client error"",
-            ""content"": {
-              ""text/html"": {
-                ""schema"": {
-                  ""$ref"": ""#/components/schemas/errorModel""
-                }
-              }
-            }
-          },
-          ""5XX"": {
-            ""description"": ""unexpected server error"",
-            ""content"": {
-              ""text/html"": {
-                ""schema"": {
-                  ""$ref"": ""#/components/schemas/errorModel""
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  },
-  ""components"": {
-    ""schemas"": {
-      ""pet"": {
-        ""required"": [
-          ""id"",
-          ""name""
-        ],
-        ""type"": ""object"",
-        ""properties"": {
-          ""id"": {
-            ""type"": ""integer"",
-            ""format"": ""int64""
-          },
-          ""name"": {
-            ""type"": ""string""
-          },
-          ""tag"": {
-            ""type"": ""string""
-          }
-        }
-      },
-      ""newPet"": {
-        ""required"": [
-          ""name""
-        ],
-        ""type"": ""object"",
-        ""properties"": {
-          ""id"": {
-            ""type"": ""integer"",
-            ""format"": ""int64""
-          },
-          ""name"": {
-            ""type"": ""string""
-          },
-          ""tag"": {
-            ""type"": ""string""
-          }
-        }
-      },
-      ""errorModel"": {
-        ""required"": [
-          ""code"",
-          ""message""
-        ],
-        ""type"": ""object"",
-        ""properties"": {
-          ""code"": {
-            ""type"": ""integer"",
-            ""format"": ""int32""
-          },
-          ""message"": {
-            ""type"": ""string""
-          }
-        }
-      }
-    }
-  }
-}";
+            var writer = new OpenApiJsonWriter(outputStringWriter, new OpenApiJsonWriterSettings { Terse = produceTerseOutput });
 
             // Act
             AdvancedDocumentWithReference.SerializeAsV3(writer);
@@ -1806,433 +1019,17 @@ namespace Microsoft.OpenApi.Tests.Models
             var actual = outputStringWriter.GetStringBuilder().ToString();
 
             // Assert
-            actual = actual.MakeLineBreaksEnvironmentNeutral();
-            expected = expected.MakeLineBreaksEnvironmentNeutral();
-            actual.Should().Be(expected);
+            await Verifier.Verify(actual).UseParameters(produceTerseOutput);
         }
 
-        [Fact]
-        public void SerializeAdvancedDocumentAsV2JsonWorks()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task SerializeAdvancedDocumentAsV2JsonWorks(bool produceTerseOutput)
         {
             // Arrange
             var outputStringWriter = new StringWriter(CultureInfo.InvariantCulture);
-            var writer = new OpenApiJsonWriter(outputStringWriter);
-            var expected = @"{
-  ""swagger"": ""2.0"",
-  ""info"": {
-    ""title"": ""Swagger Petstore (Simple)"",
-    ""description"": ""A sample API that uses a petstore as an example to demonstrate features in the swagger-2.0 specification"",
-    ""termsOfService"": ""http://helloreverb.com/terms/"",
-    ""contact"": {
-      ""name"": ""Swagger API team"",
-      ""url"": ""http://swagger.io"",
-      ""email"": ""foo@example.com""
-    },
-    ""license"": {
-      ""name"": ""MIT"",
-      ""url"": ""http://opensource.org/licenses/MIT""
-    },
-    ""version"": ""1.0.0""
-  },
-  ""host"": ""petstore.swagger.io"",
-  ""basePath"": ""/api"",
-  ""schemes"": [
-    ""http""
-  ],
-  ""paths"": {
-    ""/pets"": {
-      ""get"": {
-        ""description"": ""Returns all pets from the system that the user has access to"",
-        ""operationId"": ""findPets"",
-        ""produces"": [
-          ""application/json"",
-          ""application/xml"",
-          ""text/html""
-        ],
-        ""parameters"": [
-          {
-            ""in"": ""query"",
-            ""name"": ""tags"",
-            ""description"": ""tags to filter by"",
-            ""type"": ""array"",
-            ""items"": {
-              ""type"": ""string""
-            }
-          },
-          {
-            ""in"": ""query"",
-            ""name"": ""limit"",
-            ""description"": ""maximum number of results to return"",
-            ""type"": ""integer"",
-            ""format"": ""int32""
-          }
-        ],
-        ""responses"": {
-          ""200"": {
-            ""description"": ""pet response"",
-            ""schema"": {
-              ""type"": ""array"",
-              ""items"": {
-                ""required"": [
-                  ""id"",
-                  ""name""
-                ],
-                ""type"": ""object"",
-                ""properties"": {
-                  ""id"": {
-                    ""format"": ""int64"",
-                    ""type"": ""integer""
-                  },
-                  ""name"": {
-                    ""type"": ""string""
-                  },
-                  ""tag"": {
-                    ""type"": ""string""
-                  }
-                }
-              }
-            }
-          },
-          ""4XX"": {
-            ""description"": ""unexpected client error"",
-            ""schema"": {
-              ""required"": [
-                ""code"",
-                ""message""
-              ],
-              ""type"": ""object"",
-              ""properties"": {
-                ""code"": {
-                  ""format"": ""int32"",
-                  ""type"": ""integer""
-                },
-                ""message"": {
-                  ""type"": ""string""
-                }
-              }
-            }
-          },
-          ""5XX"": {
-            ""description"": ""unexpected server error"",
-            ""schema"": {
-              ""required"": [
-                ""code"",
-                ""message""
-              ],
-              ""type"": ""object"",
-              ""properties"": {
-                ""code"": {
-                  ""format"": ""int32"",
-                  ""type"": ""integer""
-                },
-                ""message"": {
-                  ""type"": ""string""
-                }
-              }
-            }
-          }
-        }
-      },
-      ""post"": {
-        ""description"": ""Creates a new pet in the store.  Duplicates are allowed"",
-        ""operationId"": ""addPet"",
-        ""consumes"": [
-          ""application/json""
-        ],
-        ""produces"": [
-          ""application/json"",
-          ""text/html""
-        ],
-        ""parameters"": [
-          {
-            ""in"": ""body"",
-            ""name"": ""body"",
-            ""description"": ""Pet to add to the store"",
-            ""required"": true,
-            ""schema"": {
-              ""required"": [
-                ""name""
-              ],
-              ""type"": ""object"",
-              ""properties"": {
-                ""id"": {
-                  ""format"": ""int64"",
-                  ""type"": ""integer""
-                },
-                ""name"": {
-                  ""type"": ""string""
-                },
-                ""tag"": {
-                  ""type"": ""string""
-                }
-              }
-            }
-          }
-        ],
-        ""responses"": {
-          ""200"": {
-            ""description"": ""pet response"",
-            ""schema"": {
-              ""required"": [
-                ""id"",
-                ""name""
-              ],
-              ""type"": ""object"",
-              ""properties"": {
-                ""id"": {
-                  ""format"": ""int64"",
-                  ""type"": ""integer""
-                },
-                ""name"": {
-                  ""type"": ""string""
-                },
-                ""tag"": {
-                  ""type"": ""string""
-                }
-              }
-            }
-          },
-          ""4XX"": {
-            ""description"": ""unexpected client error"",
-            ""schema"": {
-              ""required"": [
-                ""code"",
-                ""message""
-              ],
-              ""type"": ""object"",
-              ""properties"": {
-                ""code"": {
-                  ""format"": ""int32"",
-                  ""type"": ""integer""
-                },
-                ""message"": {
-                  ""type"": ""string""
-                }
-              }
-            }
-          },
-          ""5XX"": {
-            ""description"": ""unexpected server error"",
-            ""schema"": {
-              ""required"": [
-                ""code"",
-                ""message""
-              ],
-              ""type"": ""object"",
-              ""properties"": {
-                ""code"": {
-                  ""format"": ""int32"",
-                  ""type"": ""integer""
-                },
-                ""message"": {
-                  ""type"": ""string""
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    ""/pets/{id}"": {
-      ""get"": {
-        ""description"": ""Returns a user based on a single ID, if the user does not have access to the pet"",
-        ""operationId"": ""findPetById"",
-        ""produces"": [
-          ""application/json"",
-          ""application/xml"",
-          ""text/html""
-        ],
-        ""parameters"": [
-          {
-            ""in"": ""path"",
-            ""name"": ""id"",
-            ""description"": ""ID of pet to fetch"",
-            ""required"": true,
-            ""type"": ""integer"",
-            ""format"": ""int64""
-          }
-        ],
-        ""responses"": {
-          ""200"": {
-            ""description"": ""pet response"",
-            ""schema"": {
-              ""required"": [
-                ""id"",
-                ""name""
-              ],
-              ""type"": ""object"",
-              ""properties"": {
-                ""id"": {
-                  ""format"": ""int64"",
-                  ""type"": ""integer""
-                },
-                ""name"": {
-                  ""type"": ""string""
-                },
-                ""tag"": {
-                  ""type"": ""string""
-                }
-              }
-            }
-          },
-          ""4XX"": {
-            ""description"": ""unexpected client error"",
-            ""schema"": {
-              ""required"": [
-                ""code"",
-                ""message""
-              ],
-              ""type"": ""object"",
-              ""properties"": {
-                ""code"": {
-                  ""format"": ""int32"",
-                  ""type"": ""integer""
-                },
-                ""message"": {
-                  ""type"": ""string""
-                }
-              }
-            }
-          },
-          ""5XX"": {
-            ""description"": ""unexpected server error"",
-            ""schema"": {
-              ""required"": [
-                ""code"",
-                ""message""
-              ],
-              ""type"": ""object"",
-              ""properties"": {
-                ""code"": {
-                  ""format"": ""int32"",
-                  ""type"": ""integer""
-                },
-                ""message"": {
-                  ""type"": ""string""
-                }
-              }
-            }
-          }
-        }
-      },
-      ""delete"": {
-        ""description"": ""deletes a single pet based on the ID supplied"",
-        ""operationId"": ""deletePet"",
-        ""produces"": [
-          ""text/html""
-        ],
-        ""parameters"": [
-          {
-            ""in"": ""path"",
-            ""name"": ""id"",
-            ""description"": ""ID of pet to delete"",
-            ""required"": true,
-            ""type"": ""integer"",
-            ""format"": ""int64""
-          }
-        ],
-        ""responses"": {
-          ""204"": {
-            ""description"": ""pet deleted""
-          },
-          ""4XX"": {
-            ""description"": ""unexpected client error"",
-            ""schema"": {
-              ""required"": [
-                ""code"",
-                ""message""
-              ],
-              ""type"": ""object"",
-              ""properties"": {
-                ""code"": {
-                  ""format"": ""int32"",
-                  ""type"": ""integer""
-                },
-                ""message"": {
-                  ""type"": ""string""
-                }
-              }
-            }
-          },
-          ""5XX"": {
-            ""description"": ""unexpected server error"",
-            ""schema"": {
-              ""required"": [
-                ""code"",
-                ""message""
-              ],
-              ""type"": ""object"",
-              ""properties"": {
-                ""code"": {
-                  ""format"": ""int32"",
-                  ""type"": ""integer""
-                },
-                ""message"": {
-                  ""type"": ""string""
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  },
-  ""definitions"": {
-    ""pet"": {
-      ""required"": [
-        ""id"",
-        ""name""
-      ],
-      ""type"": ""object"",
-      ""properties"": {
-        ""id"": {
-          ""format"": ""int64"",
-          ""type"": ""integer""
-        },
-        ""name"": {
-          ""type"": ""string""
-        },
-        ""tag"": {
-          ""type"": ""string""
-        }
-      }
-    },
-    ""newPet"": {
-      ""required"": [
-        ""name""
-      ],
-      ""type"": ""object"",
-      ""properties"": {
-        ""id"": {
-          ""format"": ""int64"",
-          ""type"": ""integer""
-        },
-        ""name"": {
-          ""type"": ""string""
-        },
-        ""tag"": {
-          ""type"": ""string""
-        }
-      }
-    },
-    ""errorModel"": {
-      ""required"": [
-        ""code"",
-        ""message""
-      ],
-      ""type"": ""object"",
-      ""properties"": {
-        ""code"": {
-          ""format"": ""int32"",
-          ""type"": ""integer""
-        },
-        ""message"": {
-          ""type"": ""string""
-        }
-      }
-    }
-  }
-}";
+            var writer = new OpenApiJsonWriter(outputStringWriter, new OpenApiJsonWriterSettings { Terse = produceTerseOutput });
 
             // Act
             AdvancedDocument.SerializeAsV2(writer);
@@ -2240,92 +1037,17 @@ namespace Microsoft.OpenApi.Tests.Models
             var actual = outputStringWriter.GetStringBuilder().ToString();
 
             // Assert
-            actual = actual.MakeLineBreaksEnvironmentNeutral();
-            expected = expected.MakeLineBreaksEnvironmentNeutral();
-            actual.Should().Be(expected);
+            await Verifier.Verify(actual).UseParameters(produceTerseOutput);
         }
 
-        [Fact]
-        public void SerializeDuplicateExtensionsAsV3JsonWorks()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task SerializeDuplicateExtensionsAsV3JsonWorks(bool produceTerseOutput)
         {
             // Arrange
             var outputStringWriter = new StringWriter(CultureInfo.InvariantCulture);
-            var writer = new OpenApiJsonWriter(outputStringWriter);
-            var expected = @"{
-  ""openapi"": ""3.0.1"",
-  ""info"": {
-    ""title"": ""Swagger Petstore (Simple)"",
-    ""description"": ""A sample API that uses a petstore as an example to demonstrate features in the swagger-2.0 specification"",
-    ""version"": ""1.0.0""
-  },
-  ""servers"": [
-    {
-      ""url"": ""http://petstore.swagger.io/api""
-    }
-  ],
-  ""paths"": {
-    ""/add/{operand1}/{operand2}"": {
-      ""get"": {
-        ""operationId"": ""addByOperand1AndByOperand2"",
-        ""parameters"": [
-          {
-            ""name"": ""operand1"",
-            ""in"": ""path"",
-            ""description"": ""The first operand"",
-            ""required"": true,
-            ""schema"": {
-              ""type"": ""integer"",
-              ""my-extension"": 4
-            },
-            ""my-extension"": 4
-          },
-          {
-            ""name"": ""operand2"",
-            ""in"": ""path"",
-            ""description"": ""The second operand"",
-            ""required"": true,
-            ""schema"": {
-              ""type"": ""integer"",
-              ""my-extension"": 4
-            },
-            ""my-extension"": 4
-          }
-        ],
-        ""responses"": {
-          ""200"": {
-            ""description"": ""pet response"",
-            ""content"": {
-              ""application/json"": {
-                ""schema"": {
-                  ""type"": ""array"",
-                  ""items"": {
-                    ""required"": [
-                      ""id"",
-                      ""name""
-                    ],
-                    ""type"": ""object"",
-                    ""properties"": {
-                      ""id"": {
-                        ""type"": ""integer"",
-                        ""format"": ""int64""
-                      },
-                      ""name"": {
-                        ""type"": ""string""
-                      },
-                      ""tag"": {
-                        ""type"": ""string""
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}";
+            var writer = new OpenApiJsonWriter(outputStringWriter, new OpenApiJsonWriterSettings { Terse = produceTerseOutput });
 
             // Act
             DuplicateExtensions.SerializeAsV3(writer);
@@ -2333,85 +1055,17 @@ namespace Microsoft.OpenApi.Tests.Models
             var actual = outputStringWriter.GetStringBuilder().ToString();
 
             // Assert
-            actual = actual.MakeLineBreaksEnvironmentNeutral();
-            expected = expected.MakeLineBreaksEnvironmentNeutral();
-            actual.Should().Be(expected);
+            await Verifier.Verify(actual).UseParameters(produceTerseOutput);
         }
 
-        [Fact]
-        public void SerializeDuplicateExtensionsAsV2JsonWorks()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task SerializeDuplicateExtensionsAsV2JsonWorks(bool produceTerseOutput)
         {
             // Arrange
             var outputStringWriter = new StringWriter(CultureInfo.InvariantCulture);
-            var writer = new OpenApiJsonWriter(outputStringWriter);
-            var expected = @"{
-  ""swagger"": ""2.0"",
-  ""info"": {
-    ""title"": ""Swagger Petstore (Simple)"",
-    ""description"": ""A sample API that uses a petstore as an example to demonstrate features in the swagger-2.0 specification"",
-    ""version"": ""1.0.0""
-  },
-  ""host"": ""petstore.swagger.io"",
-  ""basePath"": ""/api"",
-  ""schemes"": [
-    ""http""
-  ],
-  ""paths"": {
-    ""/add/{operand1}/{operand2}"": {
-      ""get"": {
-        ""operationId"": ""addByOperand1AndByOperand2"",
-        ""produces"": [
-          ""application/json""
-        ],
-        ""parameters"": [
-          {
-            ""in"": ""path"",
-            ""name"": ""operand1"",
-            ""description"": ""The first operand"",
-            ""required"": true,
-            ""type"": ""integer"",
-            ""my-extension"": 4
-          },
-          {
-            ""in"": ""path"",
-            ""name"": ""operand2"",
-            ""description"": ""The second operand"",
-            ""required"": true,
-            ""type"": ""integer"",
-            ""my-extension"": 4
-          }
-        ],
-        ""responses"": {
-          ""200"": {
-            ""description"": ""pet response"",
-            ""schema"": {
-              ""type"": ""array"",
-              ""items"": {
-                ""required"": [
-                  ""id"",
-                  ""name""
-                ],
-                ""type"": ""object"",
-                ""properties"": {
-                  ""id"": {
-                    ""format"": ""int64"",
-                    ""type"": ""integer""
-                  },
-                  ""name"": {
-                    ""type"": ""string""
-                  },
-                  ""tag"": {
-                    ""type"": ""string""
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}";
+            var writer = new OpenApiJsonWriter(outputStringWriter, new OpenApiJsonWriterSettings { Terse = produceTerseOutput });
 
             // Act
             DuplicateExtensions.SerializeAsV2(writer);
@@ -2419,267 +1073,17 @@ namespace Microsoft.OpenApi.Tests.Models
             var actual = outputStringWriter.GetStringBuilder().ToString();
 
             // Assert
-            actual = actual.MakeLineBreaksEnvironmentNeutral();
-            expected = expected.MakeLineBreaksEnvironmentNeutral();
-            actual.Should().Be(expected);
+            await Verifier.Verify(actual).UseParameters(produceTerseOutput);
         }
 
-        [Fact]
-        public void SerializeAdvancedDocumentWithReferenceAsV2JsonWorks()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task SerializeAdvancedDocumentWithReferenceAsV2JsonWorks(bool produceTerseOutput)
         {
             // Arrange
             var outputStringWriter = new StringWriter(CultureInfo.InvariantCulture);
-            var writer = new OpenApiJsonWriter(outputStringWriter);
-            var expected =
-                @"{
-  ""swagger"": ""2.0"",
-  ""info"": {
-    ""title"": ""Swagger Petstore (Simple)"",
-    ""description"": ""A sample API that uses a petstore as an example to demonstrate features in the swagger-2.0 specification"",
-    ""termsOfService"": ""http://helloreverb.com/terms/"",
-    ""contact"": {
-      ""name"": ""Swagger API team"",
-      ""url"": ""http://swagger.io"",
-      ""email"": ""foo@example.com""
-    },
-    ""license"": {
-      ""name"": ""MIT"",
-      ""url"": ""http://opensource.org/licenses/MIT""
-    },
-    ""version"": ""1.0.0""
-  },
-  ""host"": ""petstore.swagger.io"",
-  ""basePath"": ""/api"",
-  ""schemes"": [
-    ""http""
-  ],
-  ""paths"": {
-    ""/pets"": {
-      ""get"": {
-        ""description"": ""Returns all pets from the system that the user has access to"",
-        ""operationId"": ""findPets"",
-        ""produces"": [
-          ""application/json"",
-          ""application/xml"",
-          ""text/html""
-        ],
-        ""parameters"": [
-          {
-            ""in"": ""query"",
-            ""name"": ""tags"",
-            ""description"": ""tags to filter by"",
-            ""type"": ""array"",
-            ""items"": {
-              ""type"": ""string""
-            }
-          },
-          {
-            ""in"": ""query"",
-            ""name"": ""limit"",
-            ""description"": ""maximum number of results to return"",
-            ""type"": ""integer"",
-            ""format"": ""int32""
-          }
-        ],
-        ""responses"": {
-          ""200"": {
-            ""description"": ""pet response"",
-            ""schema"": {
-              ""type"": ""array"",
-              ""items"": {
-                ""$ref"": ""#/definitions/pet""
-              }
-            }
-          },
-          ""4XX"": {
-            ""description"": ""unexpected client error"",
-            ""schema"": {
-              ""$ref"": ""#/definitions/errorModel""
-            }
-          },
-          ""5XX"": {
-            ""description"": ""unexpected server error"",
-            ""schema"": {
-              ""$ref"": ""#/definitions/errorModel""
-            }
-          }
-        }
-      },
-      ""post"": {
-        ""description"": ""Creates a new pet in the store.  Duplicates are allowed"",
-        ""operationId"": ""addPet"",
-        ""consumes"": [
-          ""application/json""
-        ],
-        ""produces"": [
-          ""application/json"",
-          ""text/html""
-        ],
-        ""parameters"": [
-          {
-            ""in"": ""body"",
-            ""name"": ""body"",
-            ""description"": ""Pet to add to the store"",
-            ""required"": true,
-            ""schema"": {
-              ""$ref"": ""#/definitions/newPet""
-            }
-          }
-        ],
-        ""responses"": {
-          ""200"": {
-            ""description"": ""pet response"",
-            ""schema"": {
-              ""$ref"": ""#/definitions/pet""
-            }
-          },
-          ""4XX"": {
-            ""description"": ""unexpected client error"",
-            ""schema"": {
-              ""$ref"": ""#/definitions/errorModel""
-            }
-          },
-          ""5XX"": {
-            ""description"": ""unexpected server error"",
-            ""schema"": {
-              ""$ref"": ""#/definitions/errorModel""
-            }
-          }
-        }
-      }
-    },
-    ""/pets/{id}"": {
-      ""get"": {
-        ""description"": ""Returns a user based on a single ID, if the user does not have access to the pet"",
-        ""operationId"": ""findPetById"",
-        ""produces"": [
-          ""application/json"",
-          ""application/xml"",
-          ""text/html""
-        ],
-        ""parameters"": [
-          {
-            ""in"": ""path"",
-            ""name"": ""id"",
-            ""description"": ""ID of pet to fetch"",
-            ""required"": true,
-            ""type"": ""integer"",
-            ""format"": ""int64""
-          }
-        ],
-        ""responses"": {
-          ""200"": {
-            ""description"": ""pet response"",
-            ""schema"": {
-              ""$ref"": ""#/definitions/pet""
-            }
-          },
-          ""4XX"": {
-            ""description"": ""unexpected client error"",
-            ""schema"": {
-              ""$ref"": ""#/definitions/errorModel""
-            }
-          },
-          ""5XX"": {
-            ""description"": ""unexpected server error"",
-            ""schema"": {
-              ""$ref"": ""#/definitions/errorModel""
-            }
-          }
-        }
-      },
-      ""delete"": {
-        ""description"": ""deletes a single pet based on the ID supplied"",
-        ""operationId"": ""deletePet"",
-        ""produces"": [
-          ""text/html""
-        ],
-        ""parameters"": [
-          {
-            ""in"": ""path"",
-            ""name"": ""id"",
-            ""description"": ""ID of pet to delete"",
-            ""required"": true,
-            ""type"": ""integer"",
-            ""format"": ""int64""
-          }
-        ],
-        ""responses"": {
-          ""204"": {
-            ""description"": ""pet deleted""
-          },
-          ""4XX"": {
-            ""description"": ""unexpected client error"",
-            ""schema"": {
-              ""$ref"": ""#/definitions/errorModel""
-            }
-          },
-          ""5XX"": {
-            ""description"": ""unexpected server error"",
-            ""schema"": {
-              ""$ref"": ""#/definitions/errorModel""
-            }
-          }
-        }
-      }
-    }
-  },
-  ""definitions"": {
-    ""pet"": {
-      ""required"": [
-        ""id"",
-        ""name""
-      ],
-      ""type"": ""object"",
-      ""properties"": {
-        ""id"": {
-          ""format"": ""int64"",
-          ""type"": ""integer""
-        },
-        ""name"": {
-          ""type"": ""string""
-        },
-        ""tag"": {
-          ""type"": ""string""
-        }
-      }
-    },
-    ""newPet"": {
-      ""required"": [
-        ""name""
-      ],
-      ""type"": ""object"",
-      ""properties"": {
-        ""id"": {
-          ""format"": ""int64"",
-          ""type"": ""integer""
-        },
-        ""name"": {
-          ""type"": ""string""
-        },
-        ""tag"": {
-          ""type"": ""string""
-        }
-      }
-    },
-    ""errorModel"": {
-      ""required"": [
-        ""code"",
-        ""message""
-      ],
-      ""type"": ""object"",
-      ""properties"": {
-        ""code"": {
-          ""format"": ""int32"",
-          ""type"": ""integer""
-        },
-        ""message"": {
-          ""type"": ""string""
-        }
-      }
-    }
-  }
-}";
+            var writer = new OpenApiJsonWriter(outputStringWriter, new OpenApiJsonWriterSettings { Terse = produceTerseOutput });
 
             // Act
             AdvancedDocumentWithReference.SerializeAsV2(writer);
@@ -2687,9 +1091,7 @@ namespace Microsoft.OpenApi.Tests.Models
             var actual = outputStringWriter.GetStringBuilder().ToString();
 
             // Assert
-            actual = actual.MakeLineBreaksEnvironmentNeutral();
-            expected = expected.MakeLineBreaksEnvironmentNeutral();
-            actual.Should().Be(expected);
+            await Verifier.Verify(actual).UseParameters(produceTerseOutput);
         }
 
         [Fact]
@@ -2913,5 +1315,46 @@ paths: { }";
             actual.Should().Be(expected);
         }
 
+        [Fact]
+        public void TestHashCodesForSimilarOpenApiDocuments()
+        {
+            // Arrange
+            var sampleFolderPath = "Models/Samples/";            
+
+            var doc1 = ParseInputFile(Path.Combine(sampleFolderPath, "sampleDocument.yaml"));
+            var doc2 = ParseInputFile(Path.Combine(sampleFolderPath, "sampleDocument.yaml"));
+            var doc3 = ParseInputFile(Path.Combine(sampleFolderPath, "sampleDocumentWithWhiteSpaces.yaml"));
+
+            // Act && Assert
+            /*
+                Test whether reading in two similar documents yield the same hash code,
+                And reading in similar documents(one has a whitespace) yields the same hash code as the result is terse
+            */
+            Assert.True(doc1.HashCode != null && doc2.HashCode != null && doc1.HashCode.Equals(doc2.HashCode));
+            Assert.Equal(doc1.HashCode, doc3.HashCode);
+        }
+
+        private static OpenApiDocument ParseInputFile(string filePath)
+        {
+            // Read in the input yaml file
+            using FileStream stream = File.OpenRead(filePath);
+            var openApiDoc = new OpenApiStreamReader().Read(stream, out var diagnostic);
+
+            return openApiDoc;
+        }
+
+        [Fact]
+        public void CopyConstructorForAdvancedDocumentWorks()
+        {
+            // Arrange & Act
+            var doc = new OpenApiDocument(AdvancedDocument);
+
+            // Assert
+            Assert.NotNull(doc.Info);
+            Assert.NotNull(doc.Servers);
+            Assert.NotNull(doc.Paths);
+            Assert.Equal(2, doc.Paths.Count);
+            Assert.NotNull(doc.Components);
+        }
     }
 }

@@ -2,6 +2,10 @@
 // Licensed under the MIT license. 
 
 using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.OpenApi.Exceptions;
 using Microsoft.OpenApi.Extensions;
 using Microsoft.OpenApi.Interfaces;
@@ -9,6 +13,7 @@ using Microsoft.OpenApi.Models;
 using Microsoft.OpenApi.Readers.Interface;
 using Microsoft.OpenApi.Readers.Services;
 using Microsoft.OpenApi.Services;
+using Microsoft.OpenApi.Validations;
 using SharpYaml.Serialization;
 
 namespace Microsoft.OpenApi.Readers
@@ -50,23 +55,12 @@ namespace Microsoft.OpenApi.Readers
                 // Parse the OpenAPI Document
                 document = context.Parse(input);
 
-                // Resolve References if requested
-                switch (_settings.ReferenceResolution)
+                if (_settings.LoadExternalRefs)
                 {
-                    case ReferenceResolutionSetting.ResolveAllReferences:
-                        throw new ArgumentException(Properties.SRResource.CannotResolveRemoteReferencesSynchronously);
-                    case ReferenceResolutionSetting.ResolveLocalReferences:
-                        var resolver = new OpenApiReferenceResolver(document);
-                        var walker = new OpenApiWalker(resolver);
-                        walker.Walk(document);
-                        foreach (var item in resolver.Errors)
-                        {
-                            diagnostic.Errors.Add(item);
-                        }
-                        break;
-                    case ReferenceResolutionSetting.DoNotResolveReferences:
-                        break;
+                    throw new InvalidOperationException("Cannot load external refs using the synchronous Read, use ReadAsync instead.");
                 }
+
+                ResolveReferences(diagnostic, document);
             }
             catch (OpenApiException ex)
             {
@@ -76,15 +70,102 @@ namespace Microsoft.OpenApi.Readers
             // Validate the document
             if (_settings.RuleSet != null && _settings.RuleSet.Rules.Count > 0)
             {
-                var errors = document.Validate(_settings.RuleSet);
-                foreach (var item in errors)
+                var openApiErrors = document.Validate(_settings.RuleSet);
+                foreach (var item in openApiErrors.OfType<OpenApiValidatorError>())
                 {
                     diagnostic.Errors.Add(item);
+                }
+                foreach (var item in openApiErrors.OfType<OpenApiValidatorWarning>())
+                {
+                    diagnostic.Warnings.Add(item);
                 }
             }
 
             return document;
         }
+
+        public async Task<ReadResult> ReadAsync(YamlDocument input)
+        {
+            var diagnostic = new OpenApiDiagnostic();
+            var context = new ParsingContext(diagnostic)
+            {
+                ExtensionParsers = _settings.ExtensionParsers,
+                BaseUrl = _settings.BaseUrl
+            };
+
+            OpenApiDocument document = null;
+            try
+            {
+                // Parse the OpenAPI Document
+                document = context.Parse(input);
+
+                if (_settings.LoadExternalRefs)
+                {
+                    await LoadExternalRefs(document);
+                }
+
+                ResolveReferences(diagnostic, document);
+            }
+            catch (OpenApiException ex)
+            {
+                diagnostic.Errors.Add(new OpenApiError(ex));
+            }
+
+            // Validate the document
+            if (_settings.RuleSet != null && _settings.RuleSet.Rules.Count > 0)
+            {
+                var openApiErrors = document.Validate(_settings.RuleSet);
+                foreach (var item in openApiErrors.OfType<OpenApiValidatorError>())
+                {
+                    diagnostic.Errors.Add(item);
+                }
+                foreach (var item in openApiErrors.OfType<OpenApiValidatorWarning>())
+                {
+                    diagnostic.Warnings.Add(item);
+                }
+            }
+
+            return new ReadResult()
+            {
+                OpenApiDocument = document,
+                OpenApiDiagnostic = diagnostic
+            };
+        }
+
+        private async Task LoadExternalRefs(OpenApiDocument document)
+        {
+            // Create workspace for all documents to live in.
+            var openApiWorkSpace = new OpenApiWorkspace();
+
+            // Load this root document into the workspace
+            var streamLoader = new DefaultStreamLoader(_settings.BaseUrl);
+            var workspaceLoader = new OpenApiWorkspaceLoader(openApiWorkSpace, _settings.CustomExternalLoader ?? streamLoader, _settings);
+            await workspaceLoader.LoadAsync(new OpenApiReference() { ExternalResource = "/" }, document);
+        }
+
+        private void ResolveReferences(OpenApiDiagnostic diagnostic, OpenApiDocument document)
+        {
+            List<OpenApiError> errors = new List<OpenApiError>();
+
+            // Resolve References if requested
+            switch (_settings.ReferenceResolution)
+            {
+                case ReferenceResolutionSetting.ResolveAllReferences:
+                    throw new ArgumentException("Resolving external references is not supported");
+                case ReferenceResolutionSetting.ResolveLocalReferences:
+                    errors.AddRange(document.ResolveReferences());
+                    break;
+                case ReferenceResolutionSetting.DoNotResolveReferences:
+                    break;
+            }
+
+            foreach (var item in errors)
+            {
+                diagnostic.Errors.Add(item);
+            }
+        }
+
+
         /// <summary>
         /// Reads the stream input and parses the fragment of an OpenAPI description into an Open API Element.
         /// </summary>
